@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "488341355430",
+    "project_id": "equalride-group11",
+    "storage_bucket": "equalride-group11.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488341355430:android:a3972a1fdbf3a621db6d67",
+        "android_client_info": {
+          "package_name": "com.example.equal_drive"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCZZumCwIfK7XfJaY-ThT_fFed0SIO6r4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
