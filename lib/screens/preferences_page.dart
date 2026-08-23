@@ -96,7 +96,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
               ),
               const SizedBox(height: 28),
               const _SectionTitle(
-                icon: Icons.accessibility_new_rounded,
+                icon: Icons.accessible_rounded,
                 title: 'Accessibility & routing',
               ),
               const SizedBox(height: 12),
@@ -105,7 +105,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 child: Column(
                   children: [
                     _PreferenceToggle(
-                      icon: Icons.wheelchair_pickup_rounded,
+                      icon: Icons.accessible_forward_rounded,
                       title: 'Wheelchair-friendly routes',
                       subtitle: 'Prioritise ramps and elevators',
                       value: stepFreeRoutes,
@@ -117,7 +117,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                     ),
                     _Divider(),
                     _PreferenceToggle(
-                      icon: Icons.stairs_outlined,
+                      icon: Icons.elevator_rounded,
                       title: 'Step-free routes',
                       subtitle: 'Avoid stairs and steep escalators',
                       value: stepFreeRoutes,
@@ -129,7 +129,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                     ),
                     _Divider(),
                     _PreferenceToggle(
-                      icon: Icons.groups_rounded,
+                      icon: Icons.directions_transit_rounded,
                       title: 'Avoid crowded transport',
                       subtitle: 'Prioritise lower crowd-level updates',
                       value: lowCrowding,
@@ -141,7 +141,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                     ),
                     _Divider(),
                     _PreferenceToggle(
-                      icon: Icons.event_seat_rounded,
+                      icon: Icons.chair_alt_rounded,
                       title: 'Priority-seat information',
                       subtitle: 'Show reported seat availability',
                       value: prioritySeating,
@@ -156,14 +156,14 @@ class _PreferencesPageState extends State<PreferencesPage> {
               ),
               const SizedBox(height: 24),
               const _SectionTitle(
-                icon: Icons.notifications_active_outlined,
+                icon: Icons.notifications_none_rounded,
                 title: 'Journey updates',
               ),
               const SizedBox(height: 12),
               GlassPanel(
                 padding: EdgeInsets.zero,
                 child: _PreferenceToggle(
-                  icon: Icons.campaign_outlined,
+                  icon: Icons.notifications_paused_rounded,
                   title: 'Accessibility alerts',
                   subtitle: 'Receive relevant travel-condition updates',
                   value: accessibilityAlerts,
@@ -209,7 +209,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.auto_awesome_rounded, color: AppTheme.aqua, size: 20),
+        Icon(icon, color: AppTheme.aqua, size: 20),
         const SizedBox(width: 8),
         Text(
           title.toUpperCase(),
