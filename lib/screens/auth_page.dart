@@ -1,14 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class AuthPage extends StatefulWidget {
-  const AuthPage({
-    super.key,
-    required this.onRegister,
-    required this.onLogin,
-  });
+import '../services/auth_service.dart';
 
-  final void Function(String email, String password) onRegister;
-  final bool Function(String email, String password) onLogin;
+class AuthPage extends StatefulWidget {
+  const AuthPage({super.key});
 
   @override
   State<AuthPage> createState() => _AuthPageState();
@@ -19,8 +15,11 @@ class _AuthPageState extends State<AuthPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
+  final authService = AuthService();
+
   bool isLogin = false;
   bool obscurePassword = true;
+  bool isSubmitting = false;
 
   @override
   void dispose() {
@@ -29,26 +28,55 @@ class _AuthPageState extends State<AuthPage> {
     super.dispose();
   }
 
-  void submit() {
+  Future<void> submit() async {
     if (!formKey.currentState!.validate()) return;
 
-    final email = emailController.text.trim();
-    final password = passwordController.text;
+    setState(() => isSubmitting = true);
 
-    if (isLogin) {
-      final success = widget.onLogin(email, password);
+    try {
+      final email = emailController.text.trim();
+      final password = passwordController.text;
 
-      if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Account not found. Register first, then use those details to log in.',
-            ),
-          ),
-        );
+      if (isLogin) {
+        await authService.login(email: email, password: password);
+      } else {
+        await authService.register(email: email, password: password);
       }
-    } else {
-      widget.onRegister(email, password);
+    } on FirebaseAuthException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authErrorMessage(error.code))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isSubmitting = false);
+      }
+    }
+  }
+
+  String authErrorMessage(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return 'An account already exists for this email.';
+      case 'invalid-email':
+        return 'Enter a valid email address.';
+      case 'weak-password':
+        return 'Use a stronger password with at least 6 characters.';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Email or password is incorrect.';
+      default:
+        return 'Unable to continue. Please try again.';
     }
   }
 
@@ -58,9 +86,7 @@ class _AuthPageState extends State<AuthPage> {
     final buttonLabel = isLogin ? 'Log in' : 'Create account';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inclusive Transport Companion'),
-      ),
+      appBar: AppBar(title: const Text('EqualRide')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -85,7 +111,7 @@ class _AuthPageState extends State<AuthPage> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Start planning public-transport journeys around your accessibility needs.',
+                      'Plan public-transport journeys around your accessibility needs.',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
@@ -127,9 +153,7 @@ class _AuthPageState extends State<AuthPage> {
                                 : Icons.visibility_off,
                           ),
                           onPressed: () {
-                            setState(() {
-                              obscurePassword = !obscurePassword;
-                            });
+                            setState(() => obscurePassword = !obscurePassword);
                           },
                         ),
                       ),
@@ -142,27 +166,31 @@ class _AuthPageState extends State<AuthPage> {
                     ),
                     const SizedBox(height: 24),
                     FilledButton(
-                      onPressed: submit,
+                      onPressed: isSubmitting ? null : submit,
                       child: Padding(
                         padding: const EdgeInsets.all(12),
-                        child: Text(buttonLabel),
+                        child: isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(buttonLabel),
                       ),
                     ),
                     TextButton(
-                      onPressed: () {
-                        setState(() => isLogin = !isLogin);
-                      },
+                      onPressed: isSubmitting
+                          ? null
+                          : () {
+                              setState(() => isLogin = !isLogin);
+                            },
                       child: Text(
                         isLogin
                             ? 'Need an account? Create one'
                             : 'Already have an account? Log in',
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Demo note: accounts are kept only while this app is running. A secure backend will replace this in a later task.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12),
                     ),
                   ],
                 ),
