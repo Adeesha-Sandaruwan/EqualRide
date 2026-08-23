@@ -88,7 +88,7 @@ class UserSetupRouter extends StatelessWidget {
           return PreferencesPage(
             initialPreferences: const AccessibilityPreferences(),
             onSave: (newPreferences) {
-              profileService.savePreferences(
+              return profileService.savePreferences(
                 userId: user.uid,
                 email: user.email ?? '',
                 preferences: newPreferences,
@@ -108,7 +108,7 @@ class UserSetupRouter extends StatelessWidget {
                   return PreferencesPage(
                     initialPreferences: preferences,
                     onSave: (newPreferences) {
-                      profileService.savePreferences(
+                      return profileService.savePreferences(
                         userId: user.uid,
                         email: user.email ?? '',
                         preferences: newPreferences,
