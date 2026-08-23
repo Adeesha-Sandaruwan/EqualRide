@@ -10,7 +10,7 @@ class PreferencesPage extends StatefulWidget {
   });
 
   final AccessibilityPreferences initialPreferences;
-  final void Function(AccessibilityPreferences preferences) onSave;
+  final Future<void> Function(AccessibilityPreferences preferences) onSave;
 
   @override
   State<PreferencesPage> createState() => _PreferencesPageState();
@@ -22,25 +22,46 @@ class _PreferencesPageState extends State<PreferencesPage> {
   late bool prioritySeating;
   late bool accessibilityAlerts;
 
+  bool isSaving = false;
+
   @override
   void initState() {
     super.initState();
-
     stepFreeRoutes = widget.initialPreferences.stepFreeRoutes;
     lowCrowding = widget.initialPreferences.lowCrowding;
     prioritySeating = widget.initialPreferences.prioritySeating;
     accessibilityAlerts = widget.initialPreferences.accessibilityAlerts;
   }
 
-  void save() {
-    widget.onSave(
-      AccessibilityPreferences(
-        stepFreeRoutes: stepFreeRoutes,
-        lowCrowding: lowCrowding,
-        prioritySeating: prioritySeating,
-        accessibilityAlerts: accessibilityAlerts,
-      ),
-    );
+  Future<void> save() async {
+    setState(() => isSaving = true);
+
+    try {
+      await widget.onSave(
+        AccessibilityPreferences(
+          stepFreeRoutes: stepFreeRoutes,
+          lowCrowding: lowCrowding,
+          prioritySeating: prioritySeating,
+          accessibilityAlerts: accessibilityAlerts,
+        ),
+      );
+
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save preferences. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isSaving = false);
+      }
+    }
   }
 
   @override
@@ -56,7 +77,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'These settings will later be used when finding and comparing routes.',
+            'These settings help EqualRide find routes that suit you.',
           ),
           const SizedBox(height: 24),
           SwitchListTile(
@@ -65,9 +86,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
               'Prioritise ramps, lifts and step-free access.',
             ),
             value: stepFreeRoutes,
-            onChanged: (value) {
-              setState(() => stepFreeRoutes = value);
-            },
+            onChanged: isSaving
+                ? null
+                : (value) => setState(() => stepFreeRoutes = value),
           ),
           SwitchListTile(
             title: const Text('Avoid crowded transport'),
@@ -75,9 +96,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
               'Prioritise lower crowd-level updates when available.',
             ),
             value: lowCrowding,
-            onChanged: (value) {
-              setState(() => lowCrowding = value);
-            },
+            onChanged: isSaving
+                ? null
+                : (value) => setState(() => lowCrowding = value),
           ),
           SwitchListTile(
             title: const Text('Show priority-seat information'),
@@ -85,9 +106,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
               'Include reported priority-seat availability.',
             ),
             value: prioritySeating,
-            onChanged: (value) {
-              setState(() => prioritySeating = value);
-            },
+            onChanged: isSaving
+                ? null
+                : (value) => setState(() => prioritySeating = value),
           ),
           SwitchListTile(
             title: const Text('Accessibility alerts'),
@@ -95,16 +116,22 @@ class _PreferencesPageState extends State<PreferencesPage> {
               'Receive relevant accessibility-condition alerts later.',
             ),
             value: accessibilityAlerts,
-            onChanged: (value) {
-              setState(() => accessibilityAlerts = value);
-            },
+            onChanged: isSaving
+                ? null
+                : (value) => setState(() => accessibilityAlerts = value),
           ),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed: save,
-            child: const Padding(
-              padding: EdgeInsets.all(12),
-              child: Text('Save preferences'),
+            onPressed: isSaving ? null : save,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save preferences'),
             ),
           ),
         ],

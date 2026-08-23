@@ -13,19 +13,21 @@ class HomePage extends StatelessWidget {
 
   final String email;
   final AccessibilityPreferences preferences;
-  final VoidCallback onLogout;
+  final Future<void> Function() onLogout;
   final VoidCallback onEditPreferences;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inclusive Transport Companion'),
+        title: const Text('EqualRide'),
         actions: [
           IconButton(
             tooltip: 'Log out',
             icon: const Icon(Icons.logout),
-            onPressed: onLogout,
+            onPressed: () async {
+              await onLogout();
+            },
           ),
         ],
       ),
@@ -40,7 +42,7 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Sprint 1 user-management increment is working. Route planning and community reports belong to later Jira work.',
+              'Your account and accessibility preferences are now saved securely.',
             ),
             const SizedBox(height: 24),
             Card(
