@@ -9,6 +9,7 @@ import 'screens/home_page.dart';
 import 'screens/preferences_page.dart';
 import 'services/auth_service.dart';
 import 'services/user_profile_service.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,10 +29,7 @@ class EqualRideApp extends StatelessWidget {
     return MaterialApp(
       title: 'EqualRide',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.darkTheme,
       home: const AppRouter(),
     );
   }
