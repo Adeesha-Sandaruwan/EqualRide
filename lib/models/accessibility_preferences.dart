@@ -10,4 +10,22 @@ class AccessibilityPreferences {
     this.prioritySeating = true,
     this.accessibilityAlerts = true,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'stepFreeRoutes': stepFreeRoutes,
+      'lowCrowding': lowCrowding,
+      'prioritySeating': prioritySeating,
+      'accessibilityAlerts': accessibilityAlerts,
+    };
+  }
+
+  factory AccessibilityPreferences.fromMap(Map<String, dynamic> map) {
+    return AccessibilityPreferences(
+      stepFreeRoutes: map['stepFreeRoutes'] ?? true,
+      lowCrowding: map['lowCrowding'] ?? false,
+      prioritySeating: map['prioritySeating'] ?? true,
+      accessibilityAlerts: map['accessibilityAlerts'] ?? true,
+    );
+  }
 }
