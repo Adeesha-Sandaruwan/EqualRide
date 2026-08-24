@@ -18,6 +18,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   final locationController = TextEditingController();
 
   String? issueType;
+  bool isSubmitting = false;
 
   static const issueTypes = [
     'Wheelchair access',
@@ -36,12 +37,30 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     super.dispose();
   }
 
-  void submitReport() {
-    if (!(formKey.currentState?.validate() ?? false)) return;
+  Future<void> submitReport() async {
+    if (isSubmitting) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Report form is valid.')),
-    );
+    descriptionController.text = descriptionController.text.trim();
+    locationController.text = locationController.text.trim();
+
+    if (!(formKey.currentState?.validate() ?? false)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fix the highlighted fields.')),
+      );
+      return;
+    }
+
+    setState(() => isSubmitting = true);
+
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Report form is valid.')),
+      );
+    } finally {
+      if (mounted) setState(() => isSubmitting = false);
+    }
   }
 
   @override
@@ -51,6 +70,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
         child: SafeArea(
           child: Form(
             key: formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             child: ListView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.all(20),
@@ -102,11 +122,15 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                           setState(() => issueType = value);
                         },
                         validator: (value) =>
-                            value == null ? 'Please select an issue type.' : null,
+                            value == null || value.isEmpty
+                                ? 'Please select an issue type.'
+                                : null,
                       ),
                       const SizedBox(height: 18),
                       TextFormField(
                         controller: descriptionController,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
                         minLines: 4,
                         maxLines: 7,
                         textCapitalization: TextCapitalization.sentences,
@@ -116,13 +140,22 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                           alignLabelWithHint: true,
                           prefixIcon: Icon(Icons.notes_rounded),
                         ),
-                        validator: (value) => value == null || value.trim().isEmpty
-                            ? 'Please describe the accessibility issue.'
-                            : null,
+                        validator: (value) {
+                          final description = value?.trim() ?? '';
+                          if (description.isEmpty) {
+                            return 'Please describe the accessibility issue.';
+                          }
+                          if (description.length < 20) {
+                            return 'Please add a little more detail (20 characters minimum).';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 18),
                       TextFormField(
                         controller: locationController,
+                        keyboardType: TextInputType.text,
+                        textInputAction: TextInputAction.done,
                         textCapitalization: TextCapitalization.words,
                         decoration: const InputDecoration(
                           labelText: 'Route / station location',
@@ -130,17 +163,26 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                           prefixIcon: Icon(Icons.location_on_outlined),
                         ),
                         validator: (value) => value == null || value.trim().isEmpty
-                            ? 'Please enter the route or station location.'
-                            : null,
+                          ? 'Please enter the route or station location.'
+                          : null,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 28),
                 FilledButton.icon(
-                  onPressed: submitReport,
-                  icon: const Icon(Icons.send_rounded),
-                  label: const Text('Submit report'),
+                  onPressed: isSubmitting ? null : submitReport,
+                  icon: isSubmitting
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            color: AppTheme.navy,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : const Icon(Icons.send_rounded),
+                  label: Text(isSubmitting ? 'Checking report...' : 'Submit report'),
                 ),
               ],
             ),
