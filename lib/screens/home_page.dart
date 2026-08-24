@@ -12,12 +12,14 @@ class HomePage extends StatelessWidget {
     required this.preferences,
     required this.onLogout,
     required this.onEditPreferences,
+    required this.onReportAccessibilityIssue,
   });
 
   final String email;
   final AccessibilityPreferences preferences;
   final Future<void> Function() onLogout;
   final VoidCallback onEditPreferences;
+  final VoidCallback onReportAccessibilityIssue;
 
   @override
   Widget build(BuildContext context) {
@@ -129,6 +131,29 @@ class HomePage extends StatelessWidget {
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
                   onTap: onEditPreferences,
+                ),
+              ),
+              const SizedBox(height: 12),
+              GlassPanel(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(18),
+                  leading: Container(
+                    height: 46,
+                    width: 46,
+                    decoration: BoxDecoration(
+                      color: AppTheme.aqua.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.report_problem_outlined,
+                      color: AppTheme.aqua,
+                    ),
+                  ),
+                  title: const Text('Report an accessibility issue'),
+                  subtitle: const Text('Tell us what could work better'),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                  onTap: onReportAccessibilityIssue,
                 ),
               ),
               const SizedBox(height: 24),

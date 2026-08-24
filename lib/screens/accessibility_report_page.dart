@@ -1,0 +1,152 @@
+import 'package:flutter/material.dart';
+
+import '../theme/app_theme.dart';
+import '../widgets/equal_ride_background.dart';
+import '../widgets/glass_panel.dart';
+
+class AccessibilityReportPage extends StatefulWidget {
+  const AccessibilityReportPage({super.key});
+
+  @override
+  State<AccessibilityReportPage> createState() =>
+      _AccessibilityReportPageState();
+}
+
+class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
+  final formKey = GlobalKey<FormState>();
+  final descriptionController = TextEditingController();
+  final locationController = TextEditingController();
+
+  String? issueType;
+
+  static const issueTypes = [
+    'Wheelchair access',
+    'Ramp unavailable',
+    'Lift unavailable',
+    'Step-free access issue',
+    'Crowding',
+    'Accessibility information incorrect',
+    'Other',
+  ];
+
+  @override
+  void dispose() {
+    descriptionController.dispose();
+    locationController.dispose();
+    super.dispose();
+  }
+
+  void submitReport() {
+    if (!(formKey.currentState?.validate() ?? false)) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Report form is valid.')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: EqualRideBackground(
+        child: SafeArea(
+          child: Form(
+            key: formKey,
+            child: ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.all(20),
+              children: [
+                Row(
+                  children: [
+                    if (Navigator.canPop(context))
+                      IconButton(
+                        tooltip: 'Back',
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back_rounded),
+                      ),
+                    Expanded(
+                      child: Text(
+                        'Report Accessibility Issue',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Help us make every journey more accessible by sharing what you found.',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                GlassPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: issueType,
+                        decoration: const InputDecoration(
+                          labelText: 'Issue type',
+                          prefixIcon: Icon(Icons.report_problem_outlined),
+                        ),
+                        items: issueTypes
+                            .map(
+                              (type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(type),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() => issueType = value);
+                        },
+                        validator: (value) =>
+                            value == null ? 'Please select an issue type.' : null,
+                      ),
+                      const SizedBox(height: 18),
+                      TextFormField(
+                        controller: descriptionController,
+                        minLines: 4,
+                        maxLines: 7,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                          hintText: 'Tell us what happened',
+                          alignLabelWithHint: true,
+                          prefixIcon: Icon(Icons.notes_rounded),
+                        ),
+                        validator: (value) => value == null || value.trim().isEmpty
+                            ? 'Please describe the accessibility issue.'
+                            : null,
+                      ),
+                      const SizedBox(height: 18),
+                      TextFormField(
+                        controller: locationController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Route / station location',
+                          hintText: 'For example, Central Station platform 2',
+                          prefixIcon: Icon(Icons.location_on_outlined),
+                        ),
+                        validator: (value) => value == null || value.trim().isEmpty
+                            ? 'Please enter the route or station location.'
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+                FilledButton.icon(
+                  onPressed: submitReport,
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text('Submit report'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
 import 'models/accessibility_preferences.dart';
+import 'screens/accessibility_report_page.dart';
 import 'screens/auth_page.dart';
 import 'screens/home_page.dart';
 import 'screens/preferences_page.dart';
@@ -114,6 +115,13 @@ class UserSetupRouter extends StatelessWidget {
                     },
                   );
                 },
+              ),
+            );
+          },
+          onReportAccessibilityIssue: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AccessibilityReportPage(),
               ),
             );
           },
