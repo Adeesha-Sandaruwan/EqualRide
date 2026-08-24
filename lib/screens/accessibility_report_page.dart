@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/accessibility_report_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -16,6 +17,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   final formKey = GlobalKey<FormState>();
   final descriptionController = TextEditingController();
   final locationController = TextEditingController();
+  final reportService = AccessibilityReportService();
 
   String? issueType;
   bool isSubmitting = false;
@@ -53,10 +55,35 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     setState(() => isSubmitting = true);
 
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 350));
+      await reportService.submitReport(
+        issueType: issueType!,
+        description: descriptionController.text,
+        location: locationController.text,
+      );
+
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      descriptionController.clear();
+      locationController.clear();
+      formKey.currentState?.reset();
+      setState(() => issueType = null);
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Accessibility report submitted successfully.'),
+        ),
+      );
+    } on AccessibilityReportException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Report form is valid.')),
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('We could not submit your report. Please try again.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => isSubmitting = false);
@@ -106,6 +133,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                     children: [
                       DropdownButtonFormField<String>(
                         initialValue: issueType,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Issue type',
                           prefixIcon: Icon(Icons.report_problem_outlined),
@@ -114,7 +142,10 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                             .map(
                               (type) => DropdownMenuItem(
                                 value: type,
-                                child: Text(type),
+                                child: Text(
+                                  type,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             )
                             .toList(),
