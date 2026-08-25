@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/community_report.dart';
+
 class AccessibilityReportException implements Exception {
   const AccessibilityReportException(this.message);
 
@@ -12,6 +14,19 @@ class AccessibilityReportException implements Exception {
 
 class AccessibilityReportService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Real-time stream of community reports ordered newest-first.
+  Stream<List<CommunityReport>> getReportsStream() {
+    return _firestore
+        .collection('accessibility_reports')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => CommunityReport.fromSnapshot(doc))
+          .toList();
+    });
+  }
 
   Future<void> submitReport({
     required String issueType,
