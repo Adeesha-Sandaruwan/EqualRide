@@ -4,6 +4,7 @@ import '../models/accessibility_preferences.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
+import 'community_reports_page.dart';
 import 'route_results_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -189,7 +190,36 @@ class _HomePageState extends State<HomePage> {
                   title: const Text('Report an accessibility issue'),
                   subtitle: const Text('Tell us what could work better'),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
-                  onTap: onReportAccessibilityIssue,
+                  onTap: widget.onReportAccessibilityIssue,
+                ),
+              ),
+              const SizedBox(height: 12),
+              GlassPanel(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(18),
+                  leading: Container(
+                    height: 46,
+                    width: 46,
+                    decoration: BoxDecoration(
+                      color: AppTheme.teal.withOpacity(0.16),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.forum_rounded,
+                      color: AppTheme.teal,
+                    ),
+                  ),
+                  title: const Text('Community Reports'),
+                  subtitle: const Text('See what others have reported'),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CommunityReportsPage(),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 24),
