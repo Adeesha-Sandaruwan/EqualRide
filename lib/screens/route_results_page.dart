@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../data/demo_route_details.dart';
 import '../data/demo_routes.dart';
+import '../models/route_details.dart';
 import '../models/transport_route.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
+import 'route_details_page.dart';
 
 class RouteResultsPage extends StatefulWidget {
   const RouteResultsPage({
@@ -306,9 +309,45 @@ class _RouteCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: () => _openRouteDetails(context),
+            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+            label: const Text('View route'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.teal,
+              side: const BorderSide(color: AppTheme.teal),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  void _openRouteDetails(BuildContext context) {
+    final match = DemoRouteDetails.all.cast<RouteDetails?>().firstWhere(
+          (details) => details?.routeId == route.id,
+          orElse: () => null,
+        );
+
+    if (match != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RouteDetailsPage(routeDetails: match),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Accessibility route details are currently only available for Bus 245 demo.',
+          ),
+        ),
+      );
+    }
   }
 }
 
