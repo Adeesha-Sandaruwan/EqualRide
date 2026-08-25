@@ -4,8 +4,9 @@ import '../models/accessibility_preferences.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
+import 'route_results_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({
     super.key,
     required this.email,
@@ -22,8 +23,44 @@ class HomePage extends StatelessWidget {
   final VoidCallback onReportAccessibilityIssue;
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final fromController = TextEditingController(text: 'Current location');
+  final destinationController = TextEditingController();
+
+  @override
+  void dispose() {
+    fromController.dispose();
+    destinationController.dispose();
+    super.dispose();
+  }
+
+  void findRoute() {
+    final from = fromController.text.trim();
+    final destination = destinationController.text.trim();
+
+    if (destination.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a destination first.')),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RouteResultsPage(
+          from: from.isEmpty ? 'Current location' : from,
+          destination: destination,
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final name = email.split('@').first;
+    final name = widget.email.split('@').first;
 
     return Scaffold(
       body: EqualRideBackground(
@@ -46,7 +83,7 @@ class HomePage extends StatelessWidget {
                   const Spacer(),
                   IconButton(
                     tooltip: 'Log out',
-                    onPressed: onLogout,
+                    onPressed: widget.onLogout,
                     icon: const Icon(Icons.logout_rounded),
                   ),
                 ],
@@ -70,31 +107,29 @@ class HomePage extends StatelessWidget {
               GlassPanel(
                 child: Column(
                   children: [
-                    _LocationField(
-                      label: 'From',
-                      hint: 'Use current location',
-                      icon: Icons.my_location_rounded,
+                    TextField(
+                      controller: fromController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'From',
+                        hintText: 'Your current location',
+                        prefixIcon: Icon(Icons.my_location_rounded),
+                      ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Divider(color: Color(0x33FFFFFF)),
-                    ),
-                    _LocationField(
-                      label: 'To',
-                      hint: 'Enter destination',
-                      icon: Icons.location_on_rounded,
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: destinationController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'To',
+                        hintText: 'Enter destination',
+                        prefixIcon: Icon(Icons.location_on_rounded),
+                      ),
+                      onSubmitted: (_) => findRoute(),
                     ),
                     const SizedBox(height: 20),
                     FilledButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Route search will be added in the next sprint.',
-                            ),
-                          ),
-                        );
-                      },
+                      onPressed: findRoute,
                       icon: const Icon(Icons.search_rounded),
                       label: const Text('Find route'),
                     ),
@@ -125,12 +160,13 @@ class HomePage extends StatelessWidget {
                   ),
                   title: const Text('Accessibility preferences'),
                   subtitle: Text(
-                    preferences.stepFreeRoutes
+                    widget.preferences.stepFreeRoutes
                         ? 'Step-free routes are prioritised'
                         : 'Customise your travel settings',
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
-                  onTap: onEditPreferences,
+                  trailing:
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                  onTap: widget.onEditPreferences,
                 ),
               ),
               const SizedBox(height: 12),
@@ -162,50 +198,6 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _LocationField extends StatelessWidget {
-  const _LocationField({
-    required this.label,
-    required this.hint,
-    required this.icon,
-  });
-
-  final String label;
-  final String hint;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: AppTheme.aqua),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label.toUpperCase(),
-                style: const TextStyle(
-                  color: AppTheme.aqua,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                hint,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ],
-          ),
-        ),
-        const Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary),
-      ],
     );
   }
 }
