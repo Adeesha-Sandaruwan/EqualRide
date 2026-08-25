@@ -189,7 +189,7 @@ class _HomePageState extends State<HomePage> {
                   title: const Text('Report an accessibility issue'),
                   subtitle: const Text('Tell us what could work better'),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
-                  onTap: onReportAccessibilityIssue,
+                  onTap: widget.onReportAccessibilityIssue,
                 ),
               ),
               const SizedBox(height: 24),
