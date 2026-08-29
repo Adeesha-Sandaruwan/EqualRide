@@ -80,11 +80,11 @@ Color _issueIconColor(String issueType) {
 Color _statusBackground(String status) {
   switch (status) {
     case 'Resolved':
-      return const Color(0xFF66BB6A);
+      return const Color(0xFF66BB6A); // green
     case 'In Progress':
-      return AppTheme.teal;
+      return const Color(0xFF64B5F6); // blue
     default: // Pending
-      return const Color(0xFFFFB74D);
+      return const Color(0xFFFFB74D); // amber
   }
 }
 
