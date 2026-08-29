@@ -88,16 +88,6 @@ Color _statusBackground(String status) {
   }
 }
 
-Color _statusForeground(String status) {
-  switch (status) {
-    case 'Resolved':
-    case 'In Progress':
-      return const Color(0xFF0A1E2C);
-    default:
-      return const Color(0xFF3E2723);
-  }
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Community Reports Page
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -807,7 +797,6 @@ class _StatusBadgeState extends State<_StatusBadge> {
   Widget build(BuildContext context) {
     final status = widget.report.status;
     final bg = _statusBackground(status);
-    final fg = _statusForeground(status);
 
     return GestureDetector(
       onTap: _isUpdating ? null : () => _pickStatus(context),
@@ -815,8 +804,12 @@ class _StatusBadgeState extends State<_StatusBadge> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: bg,
+          color: bg.withOpacity(0.15),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: bg.withOpacity(0.45),
+            width: 1,
+          ),
         ),
         child: _isUpdating
             ? SizedBox(
@@ -824,7 +817,7 @@ class _StatusBadgeState extends State<_StatusBadge> {
                 width: 14,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: fg,
+                  color: bg,
                 ),
               )
             : Row(
@@ -833,7 +826,7 @@ class _StatusBadgeState extends State<_StatusBadge> {
                   Text(
                     status,
                     style: TextStyle(
-                      color: fg,
+                      color: bg,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.3,
@@ -842,7 +835,7 @@ class _StatusBadgeState extends State<_StatusBadge> {
                   const SizedBox(width: 4),
                   Icon(
                     Icons.arrow_drop_down_rounded,
-                    color: fg,
+                    color: bg,
                     size: 14,
                   ),
                 ],
