@@ -30,6 +30,8 @@ class EqualRideApp extends StatelessWidget {
     return MaterialApp(
       title: 'EqualRide',
       debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.dark,
+      darkTheme: AppTheme.darkTheme,
       theme: AppTheme.darkTheme,
       home: const AppRouter(),
     );
