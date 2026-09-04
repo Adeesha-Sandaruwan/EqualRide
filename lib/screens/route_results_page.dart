@@ -41,7 +41,19 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
     );
   }
 
-  RouteRecommendation get recommendedRoute => recommendations.first;
+  bool get hasRoutePreferences {
+    return widget.preferences.stepFreeRoutes ||
+        widget.preferences.lowCrowding ||
+        widget.preferences.prioritySeating;
+  }
+
+  RouteRecommendation? get recommendedRoute {
+    if (!hasRoutePreferences) {
+      return null;
+    }
+
+    return recommendations.first;
+  }
 
   List<TransportRoute> get sortedRoutes {
     final routes = [...DemoRoutes.routes];
@@ -165,20 +177,24 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(30, 18, 30, 30),
-                  itemCount: sortedRoutes.length + 1,
+                  itemCount: sortedRoutes.length + (recommendedRoute == null ? 0 : 1),
                   separatorBuilder: (_, __) => const SizedBox(height: 18),
                   itemBuilder: (context, index) {
-                    if (index == 0) {
+                    final recommendation = recommendedRoute;
+
+                    if (recommendation != null && index == 0) {
                       return RouteRecommendationCard(
-                        recommendation: recommendedRoute,
+                        recommendation: recommendation,
                       );
                     }
 
-                    final route = sortedRoutes[index - 1];
+                    final routeIndex = recommendation == null ? index : index - 1;
+                    final route = sortedRoutes[routeIndex];
 
                     return _RouteCard(
                       route: route,
-                      isRecommended: route.id == recommendedRoute.route.id,
+                      isRecommended: recommendation != null &&
+                          route.id == recommendation.route.id,
                     );
                   },
                 ),

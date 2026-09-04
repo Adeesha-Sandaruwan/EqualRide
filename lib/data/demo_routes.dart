@@ -1,8 +1,8 @@
 import '../models/transport_route.dart';
 
 class DemoRoutes {
-  static const routes = [
-    TransportRoute(
+  static final List<TransportRoute> routes = List.unmodifiable([
+    const TransportRoute(
       id: 'bus-245',
       routeNumber: '245',
       transportType: 'Bus',
@@ -13,7 +13,7 @@ class DemoRoutes {
       accessibilityScore: 92,
       description: 'Low-floor bus with wheelchair access and ramp support.',
     ),
-    TransportRoute(
+    const TransportRoute(
       id: 'train-a',
       routeNumber: 'Line A',
       transportType: 'Train',
@@ -24,7 +24,7 @@ class DemoRoutes {
       accessibilityScore: 78,
       description: 'Step-free rail route with one accessible transfer.',
     ),
-    TransportRoute(
+    const TransportRoute(
       id: 'bus-138',
       routeNumber: '138',
       transportType: 'Bus',
@@ -35,5 +35,53 @@ class DemoRoutes {
       accessibilityScore: 61,
       description: 'Standard bus route with limited accessibility data.',
     ),
-  ];
+
+    ...List.generate(150, _buildDemoBusRoute),
+  ]);
+
+  static TransportRoute _buildDemoBusRoute(int index) {
+    final routeNumber = 100 + index;
+    final isStepFree = index % 4 != 0;
+
+    final crowding = switch (index % 3) {
+      0 => 'Low',
+      1 => 'Medium',
+      _ => 'High',
+    };
+
+    final transfers = index % 4;
+    final duration = 25 + ((index * 7) % 55);
+
+    var score = 55;
+
+    if (isStepFree) {
+      score += 20;
+    }
+
+    if (crowding == 'Low') {
+      score += 12;
+    } else if (crowding == 'High') {
+      score -= 8;
+    }
+
+    if (transfers == 0) {
+      score += 10;
+    } else if (transfers >= 2) {
+      score -= 8;
+    }
+
+    return TransportRoute(
+      id: 'demo-bus-$routeNumber',
+      routeNumber: '$routeNumber',
+      transportType: 'Bus',
+      durationMinutes: duration,
+      transfers: transfers,
+      isStepFree: isStepFree,
+      crowding: crowding,
+      accessibilityScore: score.clamp(0, 100).toInt(),
+      description: isStepFree
+          ? 'Demo low-floor bus route with recorded accessibility information.'
+          : 'Demo bus route with limited accessibility information.',
+    );
+  }
 }
