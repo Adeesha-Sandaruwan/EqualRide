@@ -105,18 +105,6 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 child: Column(
                   children: [
                     _PreferenceToggle(
-                      icon: Icons.accessible_forward_rounded,
-                      title: 'Wheelchair-friendly routes',
-                      subtitle: 'Prioritise ramps and elevators',
-                      value: stepFreeRoutes,
-                      onChanged: isSaving
-                          ? null
-                          : (value) {
-                              setState(() => stepFreeRoutes = value);
-                            },
-                    ),
-                    _Divider(),
-                    _PreferenceToggle(
                       icon: Icons.elevator_rounded,
                       title: 'Step-free routes',
                       subtitle: 'Avoid stairs and steep escalators',
