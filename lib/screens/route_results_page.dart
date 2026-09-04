@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../data/demo_route_details.dart';
 import '../data/demo_routes.dart';
+import '../models/accessibility_preferences.dart';
 import '../models/route_details.dart';
+import '../models/route_recommendation.dart';
 import '../models/transport_route.dart';
+import '../services/route_recommendation_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -14,10 +17,12 @@ class RouteResultsPage extends StatefulWidget {
     super.key,
     required this.from,
     required this.destination,
+    required this.preferences,
   });
 
   final String from;
   final String destination;
+  final AccessibilityPreferences preferences;
 
   @override
   State<RouteResultsPage> createState() => _RouteResultsPageState();
@@ -25,6 +30,17 @@ class RouteResultsPage extends StatefulWidget {
 
 class _RouteResultsPageState extends State<RouteResultsPage> {
   RouteSort selectedSort = RouteSort.fastest;
+
+  final recommendationService = RouteRecommendationService();
+
+  List<RouteRecommendation> get recommendations {
+    return recommendationService.rankRoutes(
+      routes: DemoRoutes.routes,
+      preferences: widget.preferences,
+    );
+  }
+
+  RouteRecommendation get recommendedRoute => recommendations.first;
 
   List<TransportRoute> get sortedRoutes {
     final routes = [...DemoRoutes.routes];
@@ -155,8 +171,7 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
 
                     return _RouteCard(
                       route: route,
-                      isRecommended:
-                          selectedSort == RouteSort.accessible && index == 0,
+                      isRecommended: route.id == recommendedRoute.route.id,
                     );
                   },
                 ),
