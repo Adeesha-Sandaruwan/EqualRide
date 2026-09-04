@@ -10,6 +10,7 @@ import '../services/route_recommendation_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
+import '../widgets/route_recommendation_card.dart';
 import 'route_details_page.dart';
 
 class RouteResultsPage extends StatefulWidget {
@@ -163,11 +164,17 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
               const SizedBox(height: 20),
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  itemCount: sortedRoutes.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  padding: const EdgeInsets.fromLTRB(30, 18, 30, 30),
+                  itemCount: sortedRoutes.length + 1,
+                  separatorBuilder: (_, __) => const SizedBox(height: 18),
                   itemBuilder: (context, index) {
-                    final route = sortedRoutes[index];
+                    if (index == 0) {
+                      return RouteRecommendationCard(
+                        recommendation: recommendedRoute,
+                      );
+                    }
+
+                    final route = sortedRoutes[index - 1];
 
                     return _RouteCard(
                       route: route,
