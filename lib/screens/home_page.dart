@@ -54,6 +54,7 @@ class _HomePageState extends State<HomePage> {
         builder: (_) => RouteResultsPage(
           from: from.isEmpty ? 'Current location' : from,
           destination: destination,
+          preferences: widget.preferences,
         ),
       ),
     );

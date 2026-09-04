@@ -39,11 +39,9 @@ class RouteRecommendationService {
         reasons.add('Only one transfer required');
       }
 
-      score = score.clamp(0, 100);
-
       return RouteRecommendation(
         route: route,
-        matchScore: score,
+        matchScore: score.clamp(0, 100).toInt(),
         reasons: reasons,
       );
     }).toList();
