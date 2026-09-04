@@ -64,7 +64,7 @@ class AppRouter extends StatelessWidget {
   }
 }
 
-class UserSetupRouter extends StatelessWidget {
+class UserSetupRouter extends StatefulWidget {
   const UserSetupRouter({
     super.key,
     required this.user,
@@ -73,11 +73,27 @@ class UserSetupRouter extends StatelessWidget {
   final User user;
 
   @override
-  Widget build(BuildContext context) {
-    final profileService = UserProfileService();
+  State<UserSetupRouter> createState() => _UserSetupRouterState();
+}
 
+class _UserSetupRouterState extends State<UserSetupRouter> {
+  late Future<AccessibilityPreferences?> _preferencesFuture;
+  final profileService = UserProfileService();
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshPreferences();
+  }
+
+  void _refreshPreferences() {
+    _preferencesFuture = profileService.getPreferences(widget.user.uid);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return FutureBuilder<AccessibilityPreferences?>(
-      future: profileService.getPreferences(user.uid),
+      future: _preferencesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const LoadingPage();
@@ -88,37 +104,53 @@ class UserSetupRouter extends StatelessWidget {
         if (preferences == null) {
           return PreferencesPage(
             initialPreferences: const AccessibilityPreferences(),
-            onSave: (newPreferences) {
-              return profileService.savePreferences(
-                userId: user.uid,
-                email: user.email ?? '',
+            onSave: (newPreferences) async {
+              await profileService.savePreferences(
+                userId: widget.user.uid,
+                email: widget.user.email ?? '',
                 preferences: newPreferences,
               );
+              // Refresh preferences and rebuild
+              if (mounted) {
+                setState(() {
+                  _refreshPreferences();
+                });
+              }
             },
           );
         }
 
         return HomePage(
-          email: user.email ?? 'User',
+          email: widget.user.email ?? 'User',
           preferences: preferences,
           onLogout: AuthService().logout,
-          onEditPreferences: () {
-            Navigator.of(context).push(
+          onEditPreferences: () async {
+            await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) {
                   return PreferencesPage(
                     initialPreferences: preferences,
-                    onSave: (newPreferences) {
-                      return profileService.savePreferences(
-                        userId: user.uid,
-                        email: user.email ?? '',
+                    onSave: (newPreferences) async {
+                      await profileService.savePreferences(
+                        userId: widget.user.uid,
+                        email: widget.user.email ?? '',
                         preferences: newPreferences,
                       );
+                      // Pop back to HomePage
+                      if (mounted) {
+                        Navigator.of(context).pop();
+                      }
                     },
                   );
                 },
               ),
             );
+            // After PreferencesPage closes, refresh preferences
+            if (mounted) {
+              setState(() {
+                _refreshPreferences();
+              });
+            }
           },
           onReportAccessibilityIssue: () {
             Navigator.of(context).push(
