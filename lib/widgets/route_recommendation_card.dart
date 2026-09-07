@@ -45,7 +45,7 @@ class RouteRecommendationCard extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                Icons.auto_awesome_rounded,
+                Icons.star_rounded,
                 color: Color(0xFF7FF7EA),
               ),
               const SizedBox(width: 8),
