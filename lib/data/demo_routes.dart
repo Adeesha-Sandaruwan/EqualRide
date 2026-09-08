@@ -9,6 +9,7 @@ class DemoRoutes {
       durationMinutes: 45,
       transfers: 0,
       isStepFree: true,
+      hasPrioritySeating: true,
       crowding: 'Low',
       accessibilityScore: 92,
       description: 'Low-floor bus with wheelchair access and ramp support.',
@@ -20,6 +21,7 @@ class DemoRoutes {
       durationMinutes: 30,
       transfers: 1,
       isStepFree: true,
+      hasPrioritySeating: true,
       crowding: 'High',
       accessibilityScore: 78,
       description: 'Step-free rail route with one accessible transfer.',
@@ -31,17 +33,18 @@ class DemoRoutes {
       durationMinutes: 52,
       transfers: 1,
       isStepFree: false,
+      hasPrioritySeating: false,
       crowding: 'Medium',
       accessibilityScore: 61,
       description: 'Standard bus route with limited accessibility data.',
     ),
-
     ...List.generate(150, _buildDemoBusRoute),
   ]);
 
   static TransportRoute _buildDemoBusRoute(int index) {
-    final routeNumber = 100 + index;
+    final routeNumber = 300 + index;
     final isStepFree = index % 4 != 0;
+    final hasPrioritySeating = index % 3 != 0;
 
     final crowding = switch (index % 3) {
       0 => 'Low',
@@ -54,9 +57,8 @@ class DemoRoutes {
 
     var score = 55;
 
-    if (isStepFree) {
-      score += 20;
-    }
+    if (isStepFree) score += 20;
+    if (hasPrioritySeating) score += 8;
 
     if (crowding == 'Low') {
       score += 12;
@@ -77,6 +79,7 @@ class DemoRoutes {
       durationMinutes: duration,
       transfers: transfers,
       isStepFree: isStepFree,
+      hasPrioritySeating: hasPrioritySeating,
       crowding: crowding,
       accessibilityScore: score.clamp(0, 100).toInt(),
       description: isStepFree
