@@ -31,8 +31,8 @@ class RouteResultsPage extends StatefulWidget {
 
 class _RouteResultsPageState extends State<RouteResultsPage> {
   RouteSort selectedSort = RouteSort.fastest;
-
   final recommendationService = RouteRecommendationService();
+  final Set<String> comparisonRouteIds = {};
 
   List<RouteRecommendation> get recommendations {
     return recommendationService.rankRoutes(
@@ -48,10 +48,7 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
   }
 
   RouteRecommendation? get recommendedRoute {
-    if (!hasRoutePreferences) {
-      return null;
-    }
-
+    if (!hasRoutePreferences) return null;
     return recommendations.first;
   }
 
@@ -78,8 +75,48 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
     return routes;
   }
 
+  void _toggleComparison(TransportRoute route) {
+    setState(() {
+      if (comparisonRouteIds.contains(route.id)) {
+        comparisonRouteIds.remove(route.id);
+        return;
+      }
+
+      if (comparisonRouteIds.length == 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Choose only two routes to compare.'),
+          ),
+        );
+        return;
+      }
+
+      comparisonRouteIds.add(route.id);
+    });
+  }
+
+  void _showComparison() {
+    final selectedRoutes = DemoRoutes.routes
+        .where((route) => comparisonRouteIds.contains(route.id))
+        .toList();
+
+    if (selectedRoutes.length != 2) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RouteComparisonSheet(
+        first: selectedRoutes[0],
+        second: selectedRoutes[1],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final recommendation = recommendedRoute;
+
     return Scaffold(
       body: EqualRideBackground(
         child: SafeArea(
@@ -132,9 +169,10 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                     color: AppTheme.textSecondary,
                     fontSize: 12,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -173,28 +211,42 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              if (comparisonRouteIds.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                  child: _CompareBar(
+                    selectedCount: comparisonRouteIds.length,
+                    onClear: () {
+                      setState(comparisonRouteIds.clear);
+                    },
+                    onCompare: comparisonRouteIds.length == 2
+                        ? _showComparison
+                        : null,
+                  ),
+                ),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(30, 18, 30, 30),
-                  itemCount: sortedRoutes.length + (recommendedRoute == null ? 0 : 1),
+                  itemCount: sortedRoutes.length + (recommendation == null ? 0 : 1),
                   separatorBuilder: (_, __) => const SizedBox(height: 18),
                   itemBuilder: (context, index) {
-                    final recommendation = recommendedRoute;
-
                     if (recommendation != null && index == 0) {
                       return RouteRecommendationCard(
                         recommendation: recommendation,
                       );
                     }
 
-                    final routeIndex = recommendation == null ? index : index - 1;
+                    final routeIndex =
+                        recommendation == null ? index : index - 1;
                     final route = sortedRoutes[routeIndex];
 
                     return _RouteCard(
                       route: route,
-                      isRecommended: recommendation != null &&
-                          route.id == recommendation.route.id,
+                      isRecommended:
+                          recommendation?.route.id == route.id,
+                      isSelectedForComparison:
+                          comparisonRouteIds.contains(route.id),
+                      onToggleComparison: () => _toggleComparison(route),
                     );
                   },
                 ),
@@ -245,14 +297,60 @@ class _FilterButton extends StatelessWidget {
   }
 }
 
+class _CompareBar extends StatelessWidget {
+  const _CompareBar({
+    required this.selectedCount,
+    required this.onClear,
+    required this.onCompare,
+  });
+
+  final int selectedCount;
+  final VoidCallback onClear;
+  final VoidCallback? onCompare;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassPanel(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          const Icon(Icons.compare_arrows_rounded, color: AppTheme.aqua),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$selectedCount of 2 routes selected',
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onClear,
+            child: const Text('Clear'),
+          ),
+          ElevatedButton(
+            onPressed: onCompare,
+            child: const Text('Compare'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RouteCard extends StatelessWidget {
   const _RouteCard({
     required this.route,
     required this.isRecommended,
+    required this.isSelectedForComparison,
+    required this.onToggleComparison,
   });
 
   final TransportRoute route;
   final bool isRecommended;
+  final bool isSelectedForComparison;
+  final VoidCallback onToggleComparison;
 
   @override
   Widget build(BuildContext context) {
@@ -268,24 +366,7 @@ class _RouteCard extends StatelessWidget {
           if (isRecommended)
             Align(
               alignment: Alignment.centerRight,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.teal,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'MOST ACCESSIBLE',
-                  style: TextStyle(
-                    color: AppTheme.navy,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
+              child: _TopBadge(label: 'MOST ACCESSIBLE'),
             ),
           if (isRecommended) const SizedBox(height: 10),
           Row(
@@ -341,6 +422,15 @@ class _RouteCard extends StatelessWidget {
                     : const Color(0xFFFFC46B),
               ),
               _StatusChip(
+                icon: Icons.event_seat_rounded,
+                label: route.hasPrioritySeating
+                    ? 'Priority seating'
+                    : 'No priority seating',
+                color: route.hasPrioritySeating
+                    ? AppTheme.aqua
+                    : const Color(0xFFFFC46B),
+              ),
+              _StatusChip(
                 icon: Icons.swap_horiz_rounded,
                 label: '${route.transfers} transfers',
                 color: AppTheme.aqua,
@@ -348,17 +438,29 @@ class _RouteCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: () => _openRouteDetails(context),
-            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: const Text('View route'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.teal,
-              side: const BorderSide(color: AppTheme.teal),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _openRouteDetails(context),
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                  label: const Text('View route'),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onToggleComparison,
+                  icon: Icon(
+                    isSelectedForComparison
+                        ? Icons.check_rounded
+                        : Icons.compare_arrows_rounded,
+                    size: 17,
+                  ),
+                  label: Text(isSelectedForComparison ? 'Selected' : 'Compare'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -366,26 +468,52 @@ class _RouteCard extends StatelessWidget {
   }
 
   void _openRouteDetails(BuildContext context) {
-    final match = DemoRouteDetails.all.cast<RouteDetails?>().firstWhere(
+    final RouteDetails? match = DemoRouteDetails.all.cast<RouteDetails?>().firstWhere(
           (details) => details?.routeId == route.id,
           orElse: () => null,
         );
 
-    if (match != null) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => RouteDetailsPage(routeDetails: match),
-        ),
-      );
-    } else {
+    if (match == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            'Accessibility route details are currently only available for Bus 245 demo.',
+            'Detailed journey steps are currently available for the original demo routes only.',
           ),
         ),
       );
+      return;
     }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RouteDetailsPage(routeDetails: match),
+      ),
+    );
+  }
+}
+
+class _TopBadge extends StatelessWidget {
+  const _TopBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.teal,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppTheme.navy,
+          fontWeight: FontWeight.w900,
+          fontSize: 10,
+        ),
+      ),
+    );
   }
 }
 
@@ -420,6 +548,168 @@ class _StatusChip extends StatelessWidget {
               color: color,
               fontWeight: FontWeight.w700,
               fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RouteComparisonSheet extends StatelessWidget {
+  const _RouteComparisonSheet({
+    required this.first,
+    required this.second,
+  });
+
+  final TransportRoute first;
+  final TransportRoute second;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF102B47),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: AppTheme.teal.withOpacity(0.45)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.compare_arrows_rounded, color: AppTheme.aqua),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Compare accessible routes',
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _ComparisonRow(
+              label: 'Accessibility score',
+              firstValue: '${first.accessibilityScore}/100',
+              secondValue: '${second.accessibilityScore}/100',
+            ),
+            _ComparisonRow(
+              label: 'Journey time',
+              firstValue: '${first.durationMinutes} min',
+              secondValue: '${second.durationMinutes} min',
+            ),
+            _ComparisonRow(
+              label: 'Transfers',
+              firstValue: '${first.transfers}',
+              secondValue: '${second.transfers}',
+            ),
+            _ComparisonRow(
+              label: 'Step-free',
+              firstValue: first.isStepFree ? 'Available' : 'Limited',
+              secondValue: second.isStepFree ? 'Available' : 'Limited',
+            ),
+            _ComparisonRow(
+              label: 'Priority seating',
+              firstValue: first.hasPrioritySeating ? 'Available' : 'Limited',
+              secondValue: second.hasPrioritySeating ? 'Available' : 'Limited',
+            ),
+            _ComparisonRow(
+              label: 'Crowding',
+              firstValue: first.crowding,
+              secondValue: second.crowding,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${first.transportType} ${first.routeNumber}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppTheme.aqua,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    '${second.transportType} ${second.routeNumber}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppTheme.aqua,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ComparisonRow extends StatelessWidget {
+  const _ComparisonRow({
+    required this.label,
+    required this.firstValue,
+    required this.secondValue,
+  });
+
+  final String label;
+  final String firstValue;
+  final String secondValue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.white12)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              firstValue,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              secondValue,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
