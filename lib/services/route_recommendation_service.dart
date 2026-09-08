@@ -31,6 +31,16 @@ class RouteRecommendationService {
         }
       }
 
+      if (preferences.prioritySeating) {
+        if (route.hasPrioritySeating) {
+          score += 12;
+          reasons.add('Priority seating is available');
+        } else {
+          score -= 8;
+          reasons.add('Priority seating availability is limited');
+        }
+      }
+
       if (route.transfers == 0) {
         score += 10;
         reasons.add('Direct route with no transfers');

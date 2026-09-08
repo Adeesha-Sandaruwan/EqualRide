@@ -6,6 +6,7 @@ class TransportRoute {
     required this.durationMinutes,
     required this.transfers,
     required this.isStepFree,
+    this.hasPrioritySeating = false,
     required this.crowding,
     required this.accessibilityScore,
     required this.description,
@@ -17,6 +18,7 @@ class TransportRoute {
   final int durationMinutes;
   final int transfers;
   final bool isStepFree;
+  final bool hasPrioritySeating;
   final String crowding;
   final int accessibilityScore;
   final String description;
