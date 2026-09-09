@@ -22,8 +22,53 @@ Future<void> main() async {
   runApp(const EqualRideApp());
 }
 
-class EqualRideApp extends StatelessWidget {
+class EqualRideApp extends StatefulWidget {
   const EqualRideApp({super.key});
+
+  @override
+  State<EqualRideApp> createState() => _EqualRideAppState();
+}
+
+class _EqualRideAppState extends State<EqualRideApp> {
+  AccessibilityPreferences displayPreferences =
+      const AccessibilityPreferences();
+
+  void updateDisplayPreferences(AccessibilityPreferences preferences) {
+    final hasChanged =
+        displayPreferences.highContrast != preferences.highContrast ||
+            displayPreferences.textScale != preferences.textScale;
+
+    if (!hasChanged) return;
+
+    setState(() {
+      displayPreferences = preferences;
+    });
+  }
+
+  ThemeData get appTheme {
+    final baseTheme = AppTheme.darkTheme;
+
+    if (!displayPreferences.highContrast) {
+      return baseTheme;
+    }
+
+    return baseTheme.copyWith(
+      scaffoldBackgroundColor: Colors.black,
+      dividerColor: Colors.white,
+      colorScheme: baseTheme.colorScheme.copyWith(
+        primary: Colors.yellowAccent,
+        onPrimary: Colors.black,
+        secondary: Colors.cyanAccent,
+        onSecondary: Colors.black,
+        surface: Colors.black,
+        onSurface: Colors.white,
+      ),
+      textTheme: baseTheme.textTheme.apply(
+        bodyColor: Colors.white,
+        displayColor: Colors.white,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,15 +76,46 @@ class EqualRideApp extends StatelessWidget {
       title: 'EqualRide',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
-      darkTheme: AppTheme.darkTheme,
-      theme: AppTheme.darkTheme,
-      home: const AppRouter(),
+      darkTheme: appTheme,
+      theme: appTheme,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+
+        Widget app = MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(displayPreferences.textScale),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+
+        if (displayPreferences.highContrast) {
+          app = ColorFiltered(
+            colorFilter: const ColorFilter.matrix([
+              1.6, 0, 0, 0, -64,
+              0, 1.6, 0, 0, -64,
+              0, 0, 1.6, 0, -64,
+              0, 0, 0, 1, 0,
+            ]),
+            child: app,
+          );
+        }
+
+        return app;
+      },
+      home: AppRouter(
+        onPreferencesChanged: updateDisplayPreferences,
+      ),
     );
   }
 }
 
 class AppRouter extends StatelessWidget {
-  const AppRouter({super.key});
+  const AppRouter({
+    super.key,
+    required this.onPreferencesChanged,
+  });
+
+  final ValueChanged<AccessibilityPreferences> onPreferencesChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +134,10 @@ class AppRouter extends StatelessWidget {
           return const AuthPage();
         }
 
-        return UserSetupRouter(user: user);
+        return UserSetupRouter(
+          user: user,
+          onPreferencesChanged: onPreferencesChanged,
+        );
       },
     );
   }
@@ -68,32 +147,70 @@ class UserSetupRouter extends StatefulWidget {
   const UserSetupRouter({
     super.key,
     required this.user,
+    required this.onPreferencesChanged,
   });
 
   final User user;
+  final ValueChanged<AccessibilityPreferences> onPreferencesChanged;
 
   @override
   State<UserSetupRouter> createState() => _UserSetupRouterState();
 }
 
 class _UserSetupRouterState extends State<UserSetupRouter> {
-  late Future<AccessibilityPreferences?> _preferencesFuture;
+  late Future<AccessibilityPreferences?> preferencesFuture;
   final profileService = UserProfileService();
+
+  double? appliedTextScale;
+  bool? appliedHighContrast;
 
   @override
   void initState() {
     super.initState();
-    _refreshPreferences();
+    refreshPreferences();
   }
 
-  void _refreshPreferences() {
-    _preferencesFuture = profileService.getPreferences(widget.user.uid);
+  void refreshPreferences() {
+    preferencesFuture = profileService.getPreferences(widget.user.uid);
+  }
+
+  void applyDisplayPreferences(AccessibilityPreferences preferences) {
+    final alreadyApplied =
+        appliedTextScale == preferences.textScale &&
+            appliedHighContrast == preferences.highContrast;
+
+    if (alreadyApplied) return;
+
+    appliedTextScale = preferences.textScale;
+    appliedHighContrast = preferences.highContrast;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onPreferencesChanged(preferences);
+      }
+    });
+  }
+
+  Future<void> savePreferences(
+    AccessibilityPreferences preferences,
+  ) async {
+    await profileService.savePreferences(
+      userId: widget.user.uid,
+      email: widget.user.email ?? '',
+      preferences: preferences,
+    );
+
+    applyDisplayPreferences(preferences);
+
+    if (mounted) {
+      setState(refreshPreferences);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<AccessibilityPreferences?>(
-      future: _preferencesFuture,
+      future: preferencesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const LoadingPage();
@@ -104,21 +221,11 @@ class _UserSetupRouterState extends State<UserSetupRouter> {
         if (preferences == null) {
           return PreferencesPage(
             initialPreferences: const AccessibilityPreferences(),
-            onSave: (newPreferences) async {
-              await profileService.savePreferences(
-                userId: widget.user.uid,
-                email: widget.user.email ?? '',
-                preferences: newPreferences,
-              );
-              // Refresh preferences and rebuild
-              if (mounted) {
-                setState(() {
-                  _refreshPreferences();
-                });
-              }
-            },
+            onSave: savePreferences,
           );
         }
+
+        applyDisplayPreferences(preferences);
 
         return HomePage(
           email: widget.user.email ?? 'User',
@@ -127,29 +234,15 @@ class _UserSetupRouterState extends State<UserSetupRouter> {
           onEditPreferences: () async {
             await Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) {
-                  return PreferencesPage(
-                    initialPreferences: preferences,
-                    onSave: (newPreferences) async {
-                      await profileService.savePreferences(
-                        userId: widget.user.uid,
-                        email: widget.user.email ?? '',
-                        preferences: newPreferences,
-                      );
-                      // Pop back to HomePage
-                      if (mounted) {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                  );
-                },
+                builder: (_) => PreferencesPage(
+                  initialPreferences: preferences,
+                  onSave: savePreferences,
+                ),
               ),
             );
-            // After PreferencesPage closes, refresh preferences
+
             if (mounted) {
-              setState(() {
-                _refreshPreferences();
-              });
+              setState(refreshPreferences);
             }
           },
           onReportAccessibilityIssue: () {
