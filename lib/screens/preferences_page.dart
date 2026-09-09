@@ -24,6 +24,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
   late bool lowCrowding;
   late bool prioritySeating;
   late bool accessibilityAlerts;
+  late bool highContrast;
+  late double textScale;
+
   bool isSaving = false;
 
   @override
@@ -33,6 +36,8 @@ class _PreferencesPageState extends State<PreferencesPage> {
     lowCrowding = widget.initialPreferences.lowCrowding;
     prioritySeating = widget.initialPreferences.prioritySeating;
     accessibilityAlerts = widget.initialPreferences.accessibilityAlerts;
+    highContrast = widget.initialPreferences.highContrast;
+    textScale = widget.initialPreferences.textScale;
   }
 
   Future<void> save() async {
@@ -45,6 +50,8 @@ class _PreferencesPageState extends State<PreferencesPage> {
           lowCrowding: lowCrowding,
           prioritySeating: prioritySeating,
           accessibilityAlerts: accessibilityAlerts,
+          highContrast: highContrast,
+          textScale: textScale,
         ),
       );
 
@@ -53,6 +60,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
       }
     } catch (_) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Could not save preferences. Please try again.'),
@@ -75,6 +83,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 children: [
                   if (Navigator.canPop(context))
                     IconButton(
+                      tooltip: 'Back',
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.arrow_back_rounded),
                     ),
@@ -95,6 +104,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 ),
               ),
               const SizedBox(height: 28),
+
               const _SectionTitle(
                 icon: Icons.accessible_rounded,
                 title: 'Accessibility & routing',
@@ -115,7 +125,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                               setState(() => stepFreeRoutes = value);
                             },
                     ),
-                    _Divider(),
+                    const _Divider(),
                     _PreferenceToggle(
                       icon: Icons.directions_transit_rounded,
                       title: 'Avoid crowded transport',
@@ -127,7 +137,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                               setState(() => lowCrowding = value);
                             },
                     ),
-                    _Divider(),
+                    const _Divider(),
                     _PreferenceToggle(
                       icon: Icons.chair_alt_rounded,
                       title: 'Priority-seat information',
@@ -142,6 +152,102 @@ class _PreferencesPageState extends State<PreferencesPage> {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 24),
+              const _SectionTitle(
+                icon: Icons.visibility_rounded,
+                title: 'Display & readability',
+              ),
+              const SizedBox(height: 12),
+              GlassPanel(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    _PreferenceToggle(
+                      icon: Icons.contrast_rounded,
+                      title: 'High contrast',
+                      subtitle: 'Increase contrast for clearer visibility',
+                      value: highContrast,
+                      onChanged: isSaving
+                          ? null
+                          : (value) {
+                              setState(() => highContrast = value);
+                            },
+                    ),
+                    const _Divider(),
+                    Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.format_size_rounded,
+                                color: AppTheme.aqua,
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Text size',
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Choose a comfortable reading size',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _TextSizeChoice(
+                                label: 'Standard',
+                                scale: 1.0,
+                                selectedScale: textScale,
+                                enabled: !isSaving,
+                                onSelected: () {
+                                  setState(() => textScale = 1.0);
+                                },
+                              ),
+                              _TextSizeChoice(
+                                label: 'Large',
+                                scale: 1.2,
+                                selectedScale: textScale,
+                                enabled: !isSaving,
+                                onSelected: () {
+                                  setState(() => textScale = 1.2);
+                                },
+                              ),
+                              _TextSizeChoice(
+                                label: 'Extra large',
+                                scale: 1.4,
+                                selectedScale: textScale,
+                                enabled: !isSaving,
+                                onSelected: () {
+                                  setState(() => textScale = 1.4);
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 24),
               const _SectionTitle(
                 icon: Icons.notifications_none_rounded,
@@ -162,6 +268,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                         },
                 ),
               ),
+
               const SizedBox(height: 28),
               FilledButton(
                 onPressed: isSaving ? null : save,
@@ -242,7 +349,42 @@ class _PreferenceToggle extends StatelessWidget {
   }
 }
 
+class _TextSizeChoice extends StatelessWidget {
+  const _TextSizeChoice({
+    required this.label,
+    required this.scale,
+    required this.selectedScale,
+    required this.enabled,
+    required this.onSelected,
+  });
+
+  final String label;
+  final double scale;
+  final double selectedScale;
+  final bool enabled;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = scale == selectedScale;
+
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: enabled ? (_) => onSelected() : null,
+      selectedColor: AppTheme.teal,
+      backgroundColor: Colors.white.withOpacity(0.08),
+      labelStyle: TextStyle(
+        color: selected ? AppTheme.navy : AppTheme.textPrimary,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+}
+
 class _Divider extends StatelessWidget {
+  const _Divider();
+
   @override
   Widget build(BuildContext context) {
     return Divider(
