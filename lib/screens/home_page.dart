@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_strings.dart';
 import '../models/accessibility_preferences.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
@@ -28,8 +29,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final fromController = TextEditingController(text: 'Current location');
+  final fromController = TextEditingController();
   final destinationController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    fromController.text =
+        AppStrings.text(widget.preferences.language, 'currentLocation');
+  }
 
   @override
   void dispose() {
@@ -44,7 +52,11 @@ class _HomePageState extends State<HomePage> {
 
     if (destination.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a destination first.')),
+        SnackBar(
+          content: Text(
+            AppStrings.text(widget.preferences.language, 'enterDestination'),
+          ),
+        ),
       );
       return;
     }
@@ -52,7 +64,12 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RouteResultsPage(
-          from: from.isEmpty ? 'Current location' : from,
+          from: from.isEmpty
+              ? AppStrings.text(
+                  widget.preferences.language,
+                  'currentLocation',
+                )
+              : from,
           destination: destination,
           preferences: widget.preferences,
         ),
@@ -63,6 +80,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final name = widget.email.split('@').first;
+    final language = widget.preferences.language;
+    String t(String key) => AppStrings.text(language, key);
 
     return Scaffold(
       body: EqualRideBackground(
@@ -92,14 +111,14 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 34),
               Text(
-                'Where are you\ngoing, $name?',
+                t('whereGoing').replaceAll('{name}', name),
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       height: 1.06,
                     ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                'Find a journey built around your needs.',
+              Text(
+                t('journeyNeeds'),
                 style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 16,
@@ -112,8 +131,8 @@ class _HomePageState extends State<HomePage> {
                     TextField(
                       controller: fromController,
                       textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'From',
+                      decoration: InputDecoration(
+                        labelText: t('from'),
                         hintText: 'Your current location',
                         prefixIcon: Icon(Icons.my_location_rounded),
                       ),
@@ -122,9 +141,9 @@ class _HomePageState extends State<HomePage> {
                     TextField(
                       controller: destinationController,
                       textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'To',
-                        hintText: 'Enter destination',
+                      decoration: InputDecoration(
+                        labelText: t('to'),
+                        hintText: t('destination'),
                         prefixIcon: Icon(Icons.location_on_rounded),
                       ),
                       onSubmitted: (_) => findRoute(),
@@ -133,7 +152,7 @@ class _HomePageState extends State<HomePage> {
                     FilledButton.icon(
                       onPressed: findRoute,
                       icon: const Icon(Icons.search_rounded),
-                      label: const Text('Find route'),
+                      label: Text(t('findRoute')),
                     ),
                   ],
                 ),
