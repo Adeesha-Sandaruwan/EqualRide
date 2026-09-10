@@ -1,0 +1,98 @@
+import '../models/accessibility_preferences.dart';
+
+class AppStrings {
+  const AppStrings._();
+
+  static String text(AppLanguage language, String key) {
+    final values = language == AppLanguage.sinhala ? _sinhala : _english;
+    return values[key] ?? _english[key] ?? key;
+  }
+
+  static const _english = {
+    'preferences': 'Preferences',
+    'savePreferences': 'Save preferences',
+    'language': 'Language',
+    'english': 'English',
+    'sinhala': 'සිංහල',
+    'languageHint': 'Choose the language used in EqualRide.',
+    'displayReadability': 'Display & readability',
+    'accessibilityRouting': 'Accessibility & routing',
+    'journeyUpdates': 'Journey updates',
+    'stepFree': 'Step-free routes',
+    'stepFreeHint': 'Avoid stairs and steep escalators',
+    'avoidCrowding': 'Avoid crowded transport',
+    'avoidCrowdingHint': 'Prioritise lower crowd-level updates',
+    'prioritySeating': 'Priority-seat information',
+    'prioritySeatingHint': 'Show reported seat availability',
+    'highContrast': 'High contrast',
+    'highContrastHint': 'Increase contrast for clearer visibility',
+    'textSize': 'Text size',
+    'textSizeHint': 'Choose a comfortable reading size',
+    'standard': 'Standard',
+    'large': 'Large',
+    'extraLarge': 'Extra large',
+    'alerts': 'Accessibility alerts',
+    'alertsHint': 'Receive relevant travel-condition updates',
+    'whereGoing': 'Where are you\ngoing, {name}?',
+    'journeyNeeds': 'Find a journey built around your needs.',
+    'from': 'From',
+    'to': 'To',
+    'currentLocation': 'Current location',
+    'destination': 'Enter destination',
+    'findRoute': 'Find route',
+    'routeResults': 'Route results',
+    'fastest': 'Fastest',
+    'accessible': 'Accessible',
+    'fewest': 'Fewest',
+    'compare': 'Compare',
+    'clear': 'Clear',
+    'viewRoute': 'View route',
+    'demoNotice':
+        'Demo route data — a verified public-transport data source will replace this later.',
+    'enterDestination': 'Enter a destination first.',
+  };
+
+  static const _sinhala = {
+    'preferences': 'මනාප',
+    'savePreferences': 'මනාප සුරකින්න',
+    'language': 'භාෂාව',
+    'english': 'English',
+    'sinhala': 'සිංහල',
+    'languageHint': 'EqualRide යෙදුමේ භාවිත කරන භාෂාව තෝරන්න.',
+    'displayReadability': 'දර්ශනය සහ කියවීම',
+    'accessibilityRouting': 'ප්‍රවේශය සහ මාර්ග සැලසුම',
+    'journeyUpdates': 'ගමන් යාවත්කාලීන',
+    'stepFree': 'පඩි රහිත මාර්ග',
+    'stepFreeHint': 'පඩි සහ තද එස්කලේටර් මඟ හරින්න',
+    'avoidCrowding': 'තදබදය මඟ හරින්න',
+    'avoidCrowdingHint': 'අඩු තදබදයක් ඇති මාර්ගවලට ප්‍රමුඛත්වය දෙන්න',
+    'prioritySeating': 'ප්‍රමුඛ ආසන තොරතුරු',
+    'prioritySeatingHint': 'වාර්තා වූ ආසන තොරතුරු පෙන්වන්න',
+    'highContrast': 'ඉහළ ප්‍රතිවිරෝධය',
+    'highContrastHint': 'පැහැදිලි දෘශ්‍යතාව සඳහා ප්‍රතිවිරෝධය වැඩි කරන්න',
+    'textSize': 'අකුරු ප්‍රමාණය',
+    'textSizeHint': 'කියවීමට පහසු ප්‍රමාණයක් තෝරන්න',
+    'standard': 'සාමාන්‍ය',
+    'large': 'විශාල',
+    'extraLarge': 'ඉතා විශාල',
+    'alerts': 'ප්‍රවේශතා දැනුම්දීම්',
+    'alertsHint': 'ගමන් තත්ත්ව යාවත්කාලීන ලබා ගන්න',
+    'whereGoing': '{name}, ඔබ යන්නේ\nකොහේද?',
+    'journeyNeeds': 'ඔබගේ අවශ්‍යතා අනුව ගමනක් සොයන්න.',
+    'from': 'සිට',
+    'to': 'දක්වා',
+    'currentLocation': 'වත්මන් ස්ථානය',
+    'destination': 'ගමනාන්තය ඇතුළත් කරන්න',
+    'findRoute': 'මාර්ගය සොයන්න',
+    'routeResults': 'මාර්ග ප්‍රතිඵල',
+    'fastest': 'වේගවත්ම',
+    'accessible': 'ප්‍රවේශසහිත',
+    'fewest': 'අඩුම',
+    'compare': 'සසඳන්න',
+    'clear': 'ඉවත් කරන්න',
+    'viewRoute': 'මාර්ගය බලන්න',
+    'demoNotice':
+        'මෙය නිරූපණ මාර්ග දත්ත වේ — සත්‍යාපිත පොදු ප්‍රවාහන දත්ත පසුව එක් කෙරේ.',
+    'enterDestination': 'පළමුව ගමනාන්තයක් ඇතුළත් කරන්න.',
+  };
+}

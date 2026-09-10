@@ -1,3 +1,5 @@
+enum AppLanguage { english, sinhala }
+
 class AccessibilityPreferences {
   final bool stepFreeRoutes;
   final bool lowCrowding;
@@ -5,6 +7,7 @@ class AccessibilityPreferences {
   final bool accessibilityAlerts;
   final bool highContrast;
   final double textScale;
+  final AppLanguage language;
 
   const AccessibilityPreferences({
     this.stepFreeRoutes = true,
@@ -13,21 +16,21 @@ class AccessibilityPreferences {
     this.accessibilityAlerts = true,
     this.highContrast = false,
     this.textScale = 1.0,
+    this.language = AppLanguage.english,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'stepFreeRoutes': stepFreeRoutes,
-      'lowCrowding': lowCrowding,
-      'prioritySeating': prioritySeating,
-      'accessibilityAlerts': accessibilityAlerts,
-      'highContrast': highContrast,
-      'textScale': textScale,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+        'stepFreeRoutes': stepFreeRoutes,
+        'lowCrowding': lowCrowding,
+        'prioritySeating': prioritySeating,
+        'accessibilityAlerts': accessibilityAlerts,
+        'highContrast': highContrast,
+        'textScale': textScale,
+        'language': language.name,
+      };
 
   factory AccessibilityPreferences.fromMap(Map<String, dynamic> map) {
-    final savedTextScale = map['textScale'];
+    final scale = map['textScale'];
 
     return AccessibilityPreferences(
       stepFreeRoutes: map['stepFreeRoutes'] ?? true,
@@ -35,9 +38,10 @@ class AccessibilityPreferences {
       prioritySeating: map['prioritySeating'] ?? true,
       accessibilityAlerts: map['accessibilityAlerts'] ?? true,
       highContrast: map['highContrast'] ?? false,
-      textScale: savedTextScale is num
-          ? savedTextScale.toDouble()
-          : 1.0,
+      textScale: scale is num ? scale.toDouble() : 1.0,
+      language: map['language'] == 'sinhala'
+          ? AppLanguage.sinhala
+          : AppLanguage.english,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_strings.dart';
 import '../models/accessibility_preferences.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
@@ -26,6 +27,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
   late bool accessibilityAlerts;
   late bool highContrast;
   late double textScale;
+  late AppLanguage language;
 
   bool isSaving = false;
 
@@ -38,7 +40,10 @@ class _PreferencesPageState extends State<PreferencesPage> {
     accessibilityAlerts = widget.initialPreferences.accessibilityAlerts;
     highContrast = widget.initialPreferences.highContrast;
     textScale = widget.initialPreferences.textScale;
+    language = widget.initialPreferences.language;
   }
+
+  String t(String key) => AppStrings.text(language, key);
 
   Future<void> save() async {
     setState(() => isSaving = true);
@@ -52,6 +57,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
           accessibilityAlerts: accessibilityAlerts,
           highContrast: highContrast,
           textScale: textScale,
+          language: language,
         ),
       );
 
@@ -89,25 +95,65 @@ class _PreferencesPageState extends State<PreferencesPage> {
                     ),
                   Expanded(
                     child: Text(
-                      'Preferences',
+                      t('preferences'),
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Customise your transit experience for accessibility and ease of use.',
-                style: TextStyle(
+              Text(
+                t('languageHint'),
+                style: const TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 16,
                 ),
               ),
               const SizedBox(height: 28),
 
-              const _SectionTitle(
+              _SectionTitle(
+                icon: Icons.language_rounded,
+                title: t('language'),
+              ),
+              const SizedBox(height: 12),
+              GlassPanel(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t('languageHint'),
+                      style: const TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+                    SegmentedButton<AppLanguage>(
+                      segments: [
+                        ButtonSegment(
+                          value: AppLanguage.english,
+                          icon: const Icon(Icons.language_rounded),
+                          label: Text(t('english')),
+                        ),
+                        ButtonSegment(
+                          value: AppLanguage.sinhala,
+                          icon: const Icon(Icons.translate_rounded),
+                          label: Text(t('sinhala')),
+                        ),
+                      ],
+                      selected: {language},
+                      onSelectionChanged: isSaving
+                          ? null
+                          : (selected) {
+                              setState(() => language = selected.first);
+                            },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              _SectionTitle(
                 icon: Icons.accessible_rounded,
-                title: 'Accessibility & routing',
+                title: t('accessibilityRouting'),
               ),
               const SizedBox(height: 12),
               GlassPanel(
@@ -116,47 +162,44 @@ class _PreferencesPageState extends State<PreferencesPage> {
                   children: [
                     _PreferenceToggle(
                       icon: Icons.elevator_rounded,
-                      title: 'Step-free routes',
-                      subtitle: 'Avoid stairs and steep escalators',
+                      title: t('stepFree'),
+                      subtitle: t('stepFreeHint'),
                       value: stepFreeRoutes,
                       onChanged: isSaving
                           ? null
-                          : (value) {
-                              setState(() => stepFreeRoutes = value);
-                            },
+                          : (value) =>
+                              setState(() => stepFreeRoutes = value),
                     ),
                     const _Divider(),
                     _PreferenceToggle(
                       icon: Icons.directions_transit_rounded,
-                      title: 'Avoid crowded transport',
-                      subtitle: 'Prioritise lower crowd-level updates',
+                      title: t('avoidCrowding'),
+                      subtitle: t('avoidCrowdingHint'),
                       value: lowCrowding,
                       onChanged: isSaving
                           ? null
-                          : (value) {
-                              setState(() => lowCrowding = value);
-                            },
+                          : (value) =>
+                              setState(() => lowCrowding = value),
                     ),
                     const _Divider(),
                     _PreferenceToggle(
                       icon: Icons.chair_alt_rounded,
-                      title: 'Priority-seat information',
-                      subtitle: 'Show reported seat availability',
+                      title: t('prioritySeating'),
+                      subtitle: t('prioritySeatingHint'),
                       value: prioritySeating,
                       onChanged: isSaving
                           ? null
-                          : (value) {
-                              setState(() => prioritySeating = value);
-                            },
+                          : (value) =>
+                              setState(() => prioritySeating = value),
                     ),
                   ],
                 ),
               ),
 
               const SizedBox(height: 24),
-              const _SectionTitle(
+              _SectionTitle(
                 icon: Icons.visibility_rounded,
-                title: 'Display & readability',
+                title: t('displayReadability'),
               ),
               const SizedBox(height: 12),
               GlassPanel(
@@ -165,14 +208,13 @@ class _PreferencesPageState extends State<PreferencesPage> {
                   children: [
                     _PreferenceToggle(
                       icon: Icons.contrast_rounded,
-                      title: 'High contrast',
-                      subtitle: 'Increase contrast for clearer visibility',
+                      title: t('highContrast'),
+                      subtitle: t('highContrastHint'),
                       value: highContrast,
                       onChanged: isSaving
                           ? null
-                          : (value) {
-                              setState(() => highContrast = value);
-                            },
+                          : (value) =>
+                              setState(() => highContrast = value),
                     ),
                     const _Divider(),
                     Padding(
@@ -180,17 +222,17 @@ class _PreferencesPageState extends State<PreferencesPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.format_size_rounded,
                                 color: AppTheme.aqua,
                               ),
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Text size',
-                                  style: TextStyle(
+                                  t('textSize'),
+                                  style: const TextStyle(
                                     color: AppTheme.textPrimary,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16,
@@ -200,9 +242,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          const Text(
-                            'Choose a comfortable reading size',
-                            style: TextStyle(
+                          Text(
+                            t('textSizeHint'),
+                            style: const TextStyle(
                               color: AppTheme.textSecondary,
                               fontSize: 13,
                             ),
@@ -213,31 +255,28 @@ class _PreferencesPageState extends State<PreferencesPage> {
                             runSpacing: 8,
                             children: [
                               _TextSizeChoice(
-                                label: 'Standard',
+                                label: t('standard'),
                                 scale: 1.0,
                                 selectedScale: textScale,
                                 enabled: !isSaving,
-                                onSelected: () {
-                                  setState(() => textScale = 1.0);
-                                },
+                                onSelected: () =>
+                                    setState(() => textScale = 1.0),
                               ),
                               _TextSizeChoice(
-                                label: 'Large',
+                                label: t('large'),
                                 scale: 1.2,
                                 selectedScale: textScale,
                                 enabled: !isSaving,
-                                onSelected: () {
-                                  setState(() => textScale = 1.2);
-                                },
+                                onSelected: () =>
+                                    setState(() => textScale = 1.2),
                               ),
                               _TextSizeChoice(
-                                label: 'Extra large',
+                                label: t('extraLarge'),
                                 scale: 1.4,
                                 selectedScale: textScale,
                                 enabled: !isSaving,
-                                onSelected: () {
-                                  setState(() => textScale = 1.4);
-                                },
+                                onSelected: () =>
+                                    setState(() => textScale = 1.4),
                               ),
                             ],
                           ),
@@ -249,23 +288,22 @@ class _PreferencesPageState extends State<PreferencesPage> {
               ),
 
               const SizedBox(height: 24),
-              const _SectionTitle(
+              _SectionTitle(
                 icon: Icons.notifications_none_rounded,
-                title: 'Journey updates',
+                title: t('journeyUpdates'),
               ),
               const SizedBox(height: 12),
               GlassPanel(
                 padding: EdgeInsets.zero,
                 child: _PreferenceToggle(
                   icon: Icons.notifications_paused_rounded,
-                  title: 'Accessibility alerts',
-                  subtitle: 'Receive relevant travel-condition updates',
+                  title: t('alerts'),
+                  subtitle: t('alertsHint'),
                   value: accessibilityAlerts,
                   onChanged: isSaving
                       ? null
-                      : (value) {
-                          setState(() => accessibilityAlerts = value);
-                        },
+                      : (value) =>
+                          setState(() => accessibilityAlerts = value),
                 ),
               ),
 
@@ -281,7 +319,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Text('Save preferences'),
+                    : Text(t('savePreferences')),
               ),
             ],
           ),
@@ -292,10 +330,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-  });
+  const _SectionTitle({required this.icon, required this.title});
 
   final IconData icon;
   final String title;
