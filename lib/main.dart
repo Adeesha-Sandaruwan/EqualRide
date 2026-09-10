@@ -103,7 +103,7 @@ class _EqualRideAppState extends State<EqualRideApp> {
   }
 }
 
-class AppRouter extends StatelessWidget {
+class AppRouter extends StatefulWidget {
   const AppRouter({
     super.key,
     required this.onPreferencesChanged,
@@ -112,11 +112,16 @@ class AppRouter extends StatelessWidget {
   final ValueChanged<AccessibilityPreferences> onPreferencesChanged;
 
   @override
-  Widget build(BuildContext context) {
-    final authService = AuthService();
+  State<AppRouter> createState() => _AppRouterState();
+}
 
+class _AppRouterState extends State<AppRouter> {
+  late final Stream<User?> authStateChanges = AuthService().authStateChanges;
+
+  @override
+  Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      stream: authService.authStateChanges,
+      stream: authStateChanges,
       builder: (context, authSnapshot) {
         if (authSnapshot.connectionState == ConnectionState.waiting) {
           return const LoadingPage();
@@ -130,7 +135,7 @@ class AppRouter extends StatelessWidget {
 
         return UserSetupRouter(
           user: user,
-          onPreferencesChanged: onPreferencesChanged,
+          onPreferencesChanged: widget.onPreferencesChanged,
         );
       },
     );
