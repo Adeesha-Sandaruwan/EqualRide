@@ -34,12 +34,6 @@ class _EqualRideAppState extends State<EqualRideApp> {
       const AccessibilityPreferences();
 
   void updateDisplayPreferences(AccessibilityPreferences preferences) {
-    final hasChanged =
-        displayPreferences.highContrast != preferences.highContrast ||
-            displayPreferences.textScale != preferences.textScale;
-
-    if (!hasChanged) return;
-
     setState(() {
       displayPreferences = preferences;
     });
