@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/demo_route_details.dart';
 import '../data/demo_routes.dart';
+import '../localization/app_strings.dart';
 import '../models/accessibility_preferences.dart';
 import '../models/route_details.dart';
 import '../models/route_recommendation.dart';
@@ -116,6 +117,8 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
   @override
   Widget build(BuildContext context) {
     final recommendation = recommendedRoute;
+    final language = widget.preferences.language;
+    String t(String key) => AppStrings.text(language, key);
 
     return Scaffold(
       body: EqualRideBackground(
@@ -133,7 +136,7 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                     ),
                     Expanded(
                       child: Text(
-                        'Route results',
+                        t('routeResults'),
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ),
@@ -161,10 +164,10 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  'Demo route data — a verified public-transport data source will replace this later.',
+                  t('demoNotice'),
                   style: TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 12,
@@ -179,7 +182,7 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                   children: [
                     Expanded(
                       child: _FilterButton(
-                        label: 'Fastest',
+                        label: t('fastest'),
                         selected: selectedSort == RouteSort.fastest,
                         onTap: () {
                           setState(() => selectedSort = RouteSort.fastest);
@@ -189,7 +192,7 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _FilterButton(
-                        label: 'Accessible',
+                        label: t('accessible'),
                         selected: selectedSort == RouteSort.accessible,
                         onTap: () {
                           setState(() => selectedSort = RouteSort.accessible);
@@ -199,7 +202,7 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _FilterButton(
-                        label: 'Fewest',
+                        label: t('fewest'),
                         selected: selectedSort == RouteSort.fewestTransfers,
                         onTap: () {
                           setState(
@@ -246,6 +249,8 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                           recommendation?.route.id == route.id,
                       isSelectedForComparison:
                           comparisonRouteIds.contains(route.id),
+                        viewRouteLabel: t('viewRoute'),
+                        compareLabel: t('compare'),
                       onToggleComparison: () => _toggleComparison(route),
                     );
                   },
@@ -344,12 +349,16 @@ class _RouteCard extends StatelessWidget {
     required this.route,
     required this.isRecommended,
     required this.isSelectedForComparison,
+    required this.viewRouteLabel,
+    required this.compareLabel,
     required this.onToggleComparison,
   });
 
   final TransportRoute route;
   final bool isRecommended;
   final bool isSelectedForComparison;
+  final String viewRouteLabel;
+  final String compareLabel;
   final VoidCallback onToggleComparison;
 
   @override
@@ -444,7 +453,7 @@ class _RouteCard extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: () => _openRouteDetails(context),
                   icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                  label: const Text('View route'),
+                  label: Text(viewRouteLabel),
                 ),
               ),
               const SizedBox(width: 10),
@@ -457,7 +466,9 @@ class _RouteCard extends StatelessWidget {
                         : Icons.compare_arrows_rounded,
                     size: 17,
                   ),
-                  label: Text(isSelectedForComparison ? 'Selected' : 'Compare'),
+                  label: Text(
+                    isSelectedForComparison ? 'Selected' : compareLabel,
+                  ),
                 ),
               ),
             ],
