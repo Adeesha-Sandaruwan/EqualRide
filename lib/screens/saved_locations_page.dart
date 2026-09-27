@@ -23,9 +23,12 @@ class SavedLocationsPage extends StatefulWidget {
 class _SavedLocationsPageState extends State<SavedLocationsPage> {
   final SavedLocationService _locationService = SavedLocationService();
 
-  Future<void> _showAddLocationDialog() async {
-    final nameController = TextEditingController();
-    final addressController = TextEditingController();
+  Future<void> _showLocationDialog({
+    SavedLocation? location,
+  }) async {
+    final nameController = TextEditingController(text: location?.name ?? '');
+    final addressController =
+        TextEditingController(text: location?.address ?? '');
     var isSaving = false;
 
     await showDialog<void>(
@@ -38,7 +41,7 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
               final address = addressController.text.trim();
 
               if (name.isEmpty || address.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(this.context).showSnackBar(
                   const SnackBar(
                     content: Text('Enter both a name and a destination.'),
                   ),
@@ -49,18 +52,27 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
               setDialogState(() => isSaving = true);
 
               try {
-                await _locationService.addLocation(
-                  userId: widget.userId,
-                  name: name,
-                  address: address,
-                );
+                if (location == null) {
+                  await _locationService.addLocation(
+                    userId: widget.userId,
+                    name: name,
+                    address: address,
+                  );
+                } else {
+                  await _locationService.updateLocation(
+                    userId: widget.userId,
+                    location: location,
+                    name: name,
+                    address: address,
+                  );
+                }
 
-                if (context.mounted) {
-                  Navigator.pop(context);
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
                 }
               } catch (_) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (this.context.mounted) {
+                  ScaffoldMessenger.of(this.context).showSnackBar(
                     const SnackBar(
                       content: Text(
                         'Could not save this location. Please try again.',
@@ -69,14 +81,14 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
                   );
                 }
               } finally {
-                if (context.mounted) {
+                if (dialogContext.mounted) {
                   setDialogState(() => isSaving = false);
                 }
               }
             }
 
             return AlertDialog(
-              title: const Text('Save location'),
+              title: Text(location == null ? 'Save location' : 'Edit location'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -87,7 +99,7 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
                       textCapitalization: TextCapitalization.words,
                       decoration: const InputDecoration(
                         labelText: 'Location name',
-                        hintText: 'Example: Home or Hospital',
+                        hintText: 'Example: Home, Work, or Hospital',
                         prefixIcon: Icon(Icons.bookmark_add_rounded),
                       ),
                     ),
@@ -108,7 +120,8 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: isSaving ? null : () => Navigator.pop(context),
+                  onPressed:
+                      isSaving ? null : () => Navigator.of(dialogContext).pop(),
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
@@ -122,7 +135,7 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text('Save'),
+                      : Text(location == null ? 'Save' : 'Update'),
                 ),
               ],
             );
@@ -135,11 +148,66 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
     addressController.dispose();
   }
 
+  Future<void> _confirmDelete(SavedLocation location) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete saved location?'),
+          content: Text(
+            'Remove "${location.name}" from your saved locations?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+
+    try {
+      await _locationService.deleteLocation(
+        userId: widget.userId,
+        locationId: location.id,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${location.name} was deleted.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not delete this location. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
+
+  void _useLocation(SavedLocation location) {
+    widget.onUseLocation(location.address);
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddLocationDialog,
+        onPressed: () => _showLocationDialog(),
         icon: const Icon(Icons.add_location_alt_rounded),
         label: const Text('Add location'),
       ),
@@ -168,7 +236,7 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
               const Padding(
                 padding: EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: Text(
-                  'Save frequent destinations and quickly use them in route search.',
+                  'Save frequent destinations and use them in route search.',
                   style: TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 15,
@@ -212,10 +280,9 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
 
                         return _SavedLocationCard(
                           location: location,
-                          onUse: () {
-                            widget.onUseLocation(location.address);
-                            Navigator.pop(context);
-                          },
+                          onUse: () => _useLocation(location),
+                          onEdit: () => _showLocationDialog(location: location),
+                          onDelete: () => _confirmDelete(location),
                         );
                       },
                     );
@@ -234,17 +301,21 @@ class _SavedLocationCard extends StatelessWidget {
   const _SavedLocationCard({
     required this.location,
     required this.onUse,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final SavedLocation location;
   final VoidCallback onUse;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     return GlassPanel(
       padding: EdgeInsets.zero,
       child: ListTile(
-        contentPadding: const EdgeInsets.all(18),
+        contentPadding: const EdgeInsets.fromLTRB(18, 12, 8, 12),
         leading: Container(
           height: 46,
           width: 46,
@@ -268,8 +339,38 @@ class _SavedLocationCard extends StatelessWidget {
           padding: const EdgeInsets.only(top: 4),
           child: Text(location.address),
         ),
-        trailing: const Icon(Icons.arrow_forward_rounded),
         onTap: onUse,
+        trailing: PopupMenuButton<String>(
+          tooltip: 'Location actions',
+          onSelected: (value) {
+            if (value == 'use') onUse();
+            if (value == 'edit') onEdit();
+            if (value == 'delete') onDelete();
+          },
+          itemBuilder: (_) => const [
+            PopupMenuItem(
+              value: 'use',
+              child: ListTile(
+                leading: Icon(Icons.search_rounded),
+                title: Text('Use for route'),
+              ),
+            ),
+            PopupMenuItem(
+              value: 'edit',
+              child: ListTile(
+                leading: Icon(Icons.edit_rounded),
+                title: Text('Edit'),
+              ),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              child: ListTile(
+                leading: Icon(Icons.delete_outline_rounded),
+                title: Text('Delete'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
