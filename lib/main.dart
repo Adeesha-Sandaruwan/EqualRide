@@ -227,6 +227,7 @@ class _UserSetupRouterState extends State<UserSetupRouter> {
         applyDisplayPreferences(preferences);
 
         return HomePage(
+          userId: widget.user.uid,
           email: widget.user.email ?? 'User',
           preferences: preferences,
           onLogout: AuthService().logout,

@@ -7,10 +7,12 @@ import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
 import 'community_reports_page.dart';
 import 'route_results_page.dart';
+import 'saved_locations_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
     super.key,
+    required this.userId,
     required this.email,
     required this.preferences,
     required this.onLogout,
@@ -18,6 +20,7 @@ class HomePage extends StatefulWidget {
     required this.onReportAccessibilityIssue,
   });
 
+  final String userId;
   final String email;
   final AccessibilityPreferences preferences;
   final Future<void> Function() onLogout;
@@ -77,6 +80,27 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _openSavedLocations() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SavedLocationsPage(
+          userId: widget.userId,
+          onUseLocation: (address) {
+            setState(() {
+              destinationController.text = address;
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Destination set to $address'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = widget.email.split('@').first;
@@ -119,7 +143,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 10),
               Text(
                 t('journeyNeeds'),
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 16,
                 ),
@@ -134,7 +158,7 @@ class _HomePageState extends State<HomePage> {
                       decoration: InputDecoration(
                         labelText: t('from'),
                         hintText: 'Your current location',
-                        prefixIcon: Icon(Icons.my_location_rounded),
+                        prefixIcon: const Icon(Icons.my_location_rounded),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -144,7 +168,7 @@ class _HomePageState extends State<HomePage> {
                       decoration: InputDecoration(
                         labelText: t('to'),
                         hintText: t('destination'),
-                        prefixIcon: Icon(Icons.location_on_rounded),
+                        prefixIcon: const Icon(Icons.location_on_rounded),
                       ),
                       onSubmitted: (_) => findRoute(),
                     ),
@@ -167,17 +191,9 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.zero,
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(18),
-                  leading: Container(
-                    height: 46,
-                    width: 46,
-                    decoration: BoxDecoration(
-                      color: AppTheme.teal.withOpacity(0.16),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.tune_rounded,
-                      color: AppTheme.teal,
-                    ),
+                  leading: _HomeIcon(
+                    icon: Icons.tune_rounded,
+                    color: AppTheme.teal,
                   ),
                   title: const Text('Accessibility preferences'),
                   subtitle: Text(
@@ -195,21 +211,32 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.zero,
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(18),
-                  leading: Container(
-                    height: 46,
-                    width: 46,
-                    decoration: BoxDecoration(
-                      color: AppTheme.aqua.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.report_problem_outlined,
-                      color: AppTheme.aqua,
-                    ),
+                  leading: const _HomeIcon(
+                    icon: Icons.bookmark_rounded,
+                    color: AppTheme.aqua,
+                  ),
+                  title: const Text('Saved locations'),
+                  subtitle: const Text(
+                    'Use your frequent destinations in route search',
+                  ),
+                  trailing:
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                  onTap: _openSavedLocations,
+                ),
+              ),
+              const SizedBox(height: 12),
+              GlassPanel(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(18),
+                  leading: const _HomeIcon(
+                    icon: Icons.report_problem_outlined,
+                    color: AppTheme.aqua,
                   ),
                   title: const Text('Report an accessibility issue'),
                   subtitle: const Text('Tell us what could work better'),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                  trailing:
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 18),
                   onTap: widget.onReportAccessibilityIssue,
                 ),
               ),
@@ -218,21 +245,14 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.zero,
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(18),
-                  leading: Container(
-                    height: 46,
-                    width: 46,
-                    decoration: BoxDecoration(
-                      color: AppTheme.teal.withOpacity(0.16),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.forum_rounded,
-                      color: AppTheme.teal,
-                    ),
+                  leading: const _HomeIcon(
+                    icon: Icons.forum_rounded,
+                    color: AppTheme.teal,
                   ),
                   title: const Text('Community Reports'),
                   subtitle: const Text('See what others have reported'),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                  trailing:
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 18),
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -248,6 +268,29 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HomeIcon extends StatelessWidget {
+  const _HomeIcon({
+    required this.icon,
+    required this.color,
+  });
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 46,
+      width: 46,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.16),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Icon(icon, color: color),
     );
   }
 }
