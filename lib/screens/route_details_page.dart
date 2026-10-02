@@ -250,18 +250,18 @@ class _HoverGlassCardState extends State<_HoverGlassCard> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        transform: Matrix4.translationValues(0, _isHovered ? -3.5 : 0, 0),
+        transform: Matrix4.translationValues(0, _isHovered ? -1.5 : 0, 0),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: [
             BoxShadow(
               color: _isHovered
-                  ? glow.withValues(alpha: 0.24)
-                  : Colors.black.withValues(alpha: 0.18),
-              blurRadius: _isHovered ? 26 : 18,
-              offset: Offset(0, _isHovered ? 9 : 5),
+                  ? glow.withValues(alpha: 0.10)
+                  : Colors.black.withValues(alpha: 0.16),
+              blurRadius: _isHovered ? 20 : 16,
+              offset: Offset(0, _isHovered ? 5 : 4),
             ),
           ],
         ),
@@ -270,18 +270,18 @@ class _HoverGlassCardState extends State<_HoverGlassCard> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
+              duration: const Duration(milliseconds: 200),
               padding: padding,
               decoration: BoxDecoration(
                 color: _isHovered
-                    ? Colors.white.withValues(alpha: 0.13)
+                    ? Colors.white.withValues(alpha: 0.11)
                     : Colors.white.withValues(alpha: 0.09),
                 borderRadius: BorderRadius.circular(borderRadius),
                 border: Border.all(
                   color: _isHovered
-                      ? glow.withValues(alpha: 0.55)
+                      ? glow.withValues(alpha: 0.32)
                       : Colors.white.withValues(alpha: 0.18),
-                  width: _isHovered ? 1.4 : 1.0,
+                  width: 1.0,
                 ),
               ),
               child: widget.child,
@@ -511,7 +511,7 @@ class _HoverMapButtonState extends State<_HoverMapButton> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(0, _isHovered ? -2.5 : 0, 0),
+          transform: Matrix4.translationValues(0, _isHovered ? -1.0 : 0, 0),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           decoration: BoxDecoration(
             gradient: _isHovered
@@ -538,9 +538,9 @@ class _HoverMapButtonState extends State<_HoverMapButton> {
             boxShadow: [
               BoxShadow(
                 color:
-                    AppTheme.teal.withValues(alpha: _isHovered ? 0.42 : 0.08),
-                blurRadius: _isHovered ? 16 : 6,
-                offset: Offset(0, _isHovered ? 4 : 2),
+                    AppTheme.teal.withValues(alpha: _isHovered ? 0.28 : 0.08),
+                blurRadius: _isHovered ? 12 : 6,
+                offset: Offset(0, _isHovered ? 3 : 2),
               ),
             ],
           ),
@@ -548,7 +548,7 @@ class _HoverMapButtonState extends State<_HoverMapButton> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedScale(
-                scale: _isHovered ? 1.15 : 1.0,
+                scale: _isHovered ? 1.08 : 1.0,
                 duration: const Duration(milliseconds: 200),
                 child: Icon(
                   Icons.map_rounded,
@@ -1058,25 +1058,25 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
                   width: 40,
                   decoration: BoxDecoration(
                     color: AppTheme.teal
-                        .withValues(alpha: _isHovered ? 0.30 : 0.18),
+                        .withValues(alpha: _isHovered ? 0.24 : 0.18),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: AppTheme.teal
-                          .withValues(alpha: _isHovered ? 0.85 : 0.45),
-                      width: _isHovered ? 2.0 : 1.5,
+                          .withValues(alpha: _isHovered ? 0.65 : 0.45),
+                      width: _isHovered ? 1.8 : 1.5,
                     ),
                     boxShadow: _isHovered
                         ? [
                             BoxShadow(
-                              color: AppTheme.teal.withValues(alpha: 0.40),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
+                              color: AppTheme.teal.withValues(alpha: 0.22),
+                              blurRadius: 7,
+                              offset: const Offset(0, 1),
                             ),
                           ]
                         : null,
                   ),
                   child: AnimatedScale(
-                    scale: _isHovered ? 1.12 : 1.0,
+                    scale: _isHovered ? 1.06 : 1.0,
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       stepIcon,
@@ -1092,7 +1092,7 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
                       width: 2,
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       color: AppTheme.teal
-                          .withValues(alpha: _isHovered ? 0.55 : 0.30),
+                          .withValues(alpha: _isHovered ? 0.45 : 0.30),
                     ),
                   ),
               ],
@@ -1107,12 +1107,12 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: _isHovered
-                        ? Colors.white.withValues(alpha: 0.08)
+                        ? Colors.white.withValues(alpha: 0.05)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: _isHovered
-                          ? AppTheme.teal.withValues(alpha: 0.35)
+                          ? AppTheme.teal.withValues(alpha: 0.24)
                           : Colors.transparent,
                     ),
                   ),
