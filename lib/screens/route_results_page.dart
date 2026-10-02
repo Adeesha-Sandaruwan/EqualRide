@@ -4,7 +4,6 @@ import '../data/demo_route_details.dart';
 import '../data/demo_routes.dart';
 import '../localization/app_strings.dart';
 import '../models/accessibility_preferences.dart';
-import '../models/route_details.dart';
 import '../models/route_recommendation.dart';
 import '../models/transport_route.dart';
 import '../services/route_recommendation_service.dart';
@@ -34,6 +33,57 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
   RouteSort selectedSort = RouteSort.fastest;
   final recommendationService = RouteRecommendationService();
   final Set<String> comparisonRouteIds = {};
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool _matchesRoute(TransportRoute route, String query) {
+    final clean = query.trim().toLowerCase();
+    if (clean.isEmpty) return true;
+
+    final title = '${route.transportType} ${route.routeNumber}'.toLowerCase();
+    final reverseTitle = '${route.routeNumber} ${route.transportType}'.toLowerCase();
+    final id = route.id.toLowerCase();
+    final number = route.routeNumber.toLowerCase();
+    final type = route.transportType.toLowerCase();
+    final desc = route.description.toLowerCase();
+    final crowding = route.crowding.toLowerCase();
+
+    // Direct match check (e.g. "bus 360", "360", "line a")
+    if (title.contains(clean) ||
+        reverseTitle.contains(clean) ||
+        id.contains(clean) ||
+        number.contains(clean) ||
+        type.contains(clean) ||
+        desc.contains(clean)) {
+      return true;
+    }
+
+    // Normalized alphanumeric match (e.g. "bus360", "bus-360")
+    final cleanAlpha = clean.replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final titleAlpha = title.replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final idAlpha = id.replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (cleanAlpha.isNotEmpty &&
+        (titleAlpha.contains(cleanAlpha) || idAlpha.contains(cleanAlpha))) {
+      return true;
+    }
+
+    // Multi-token match (e.g. "bus" and "360" in separate words)
+    final tokens = clean.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+    if (tokens.length > 1) {
+      final combined = '$title $id $desc $crowding ${route.isStepFree ? "step free" : ""}';
+      if (tokens.every((token) => combined.contains(token))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   List<RouteRecommendation> get recommendations {
     return recommendationService.rankRoutes(
@@ -49,12 +99,15 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
   }
 
   RouteRecommendation? get recommendedRoute {
+    if (_searchQuery.trim().isNotEmpty) return null;
     if (!hasRoutePreferences) return null;
-    return recommendations.first;
+    return recommendations.firstOrNull;
   }
 
   List<TransportRoute> get sortedRoutes {
-    final routes = [...DemoRoutes.routes];
+    final routes = DemoRoutes.routes
+        .where((route) => _matchesRoute(route, _searchQuery))
+        .toList();
 
     switch (selectedSort) {
       case RouteSort.fastest:
@@ -165,10 +218,72 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
               ),
               const SizedBox(height: 12),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: t('searchRoutes'),
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear_rounded),
+                            tooltip: t('clearSearch'),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+              if (_searchQuery.trim().isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${sortedRoutes.length} ${sortedRoutes.length == 1 ? "route" : "routes"} found',
+                        style: const TextStyle(
+                          color: AppTheme.aqua,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        child: Text(
+                          t('clearSearch'),
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
                   t('demoNotice'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 12,
                   ),
@@ -228,33 +343,93 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                   ),
                 ),
               Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(30, 18, 30, 30),
-                  itemCount: sortedRoutes.length + (recommendation == null ? 0 : 1),
-                  separatorBuilder: (_, __) => const SizedBox(height: 18),
-                  itemBuilder: (context, index) {
-                    if (recommendation != null && index == 0) {
-                      return RouteRecommendationCard(
-                        recommendation: recommendation,
-                      );
-                    }
+                child: sortedRoutes.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 28),
+                          child: GlassPanel(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 32,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.teal.withOpacity(0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.search_off_rounded,
+                                    size: 40,
+                                    color: AppTheme.teal,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  t('noRoutesFound'),
+                                  style:
+                                      Theme.of(context).textTheme.titleLarge,
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  t('noRoutesMatch'),
+                                  style: const TextStyle(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 20),
+                                OutlinedButton.icon(
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                  icon: const Icon(Icons.clear_rounded,
+                                      size: 18),
+                                  label: Text(t('clearSearch')),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(30, 18, 30, 30),
+                        itemCount: sortedRoutes.length +
+                            (recommendation == null ? 0 : 1),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 18),
+                        itemBuilder: (context, index) {
+                          if (recommendation != null && index == 0) {
+                            return RouteRecommendationCard(
+                              recommendation: recommendation,
+                            );
+                          }
 
-                    final routeIndex =
-                        recommendation == null ? index : index - 1;
-                    final route = sortedRoutes[routeIndex];
+                          final routeIndex =
+                              recommendation == null ? index : index - 1;
+                          final route = sortedRoutes[routeIndex];
 
-                    return _RouteCard(
-                      route: route,
-                      isRecommended:
-                          recommendation?.route.id == route.id,
-                      isSelectedForComparison:
-                          comparisonRouteIds.contains(route.id),
-                        viewRouteLabel: t('viewRoute'),
-                        compareLabel: t('compare'),
-                      onToggleComparison: () => _toggleComparison(route),
-                    );
-                  },
-                ),
+                          return _RouteCard(
+                            route: route,
+                            isRecommended:
+                                recommendation?.route.id == route.id,
+                            isSelectedForComparison:
+                                comparisonRouteIds.contains(route.id),
+                            viewRouteLabel: t('viewRoute'),
+                            compareLabel: t('compare'),
+                            from: widget.from,
+                            destination: widget.destination,
+                            onToggleComparison: () =>
+                                _toggleComparison(route),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -352,6 +527,8 @@ class _RouteCard extends StatelessWidget {
     required this.viewRouteLabel,
     required this.compareLabel,
     required this.onToggleComparison,
+    this.from,
+    this.destination,
   });
 
   final TransportRoute route;
@@ -360,6 +537,8 @@ class _RouteCard extends StatelessWidget {
   final String viewRouteLabel;
   final String compareLabel;
   final VoidCallback onToggleComparison;
+  final String? from;
+  final String? destination;
 
   @override
   Widget build(BuildContext context) {
@@ -479,25 +658,15 @@ class _RouteCard extends StatelessWidget {
   }
 
   void _openRouteDetails(BuildContext context) {
-    final RouteDetails? match = DemoRouteDetails.all.cast<RouteDetails?>().firstWhere(
-          (details) => details?.routeId == route.id,
-          orElse: () => null,
-        );
-
-    if (match == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Detailed journey steps are currently available for the original demo routes only.',
-          ),
-        ),
-      );
-      return;
-    }
+    final details = DemoRouteDetails.getDetailsForRoute(
+      route,
+      from: from,
+      destination: destination,
+    );
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => RouteDetailsPage(routeDetails: match),
+        builder: (_) => RouteDetailsPage(routeDetails: details),
       ),
     );
   }
