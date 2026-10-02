@@ -231,15 +231,32 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                     hintText: t('searchRoutes'),
                     prefixIcon: const Icon(Icons.search_rounded),
                     suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded),
-                            tooltip: t('clearSearch'),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
+                        ? Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: IconButton(
+                              tooltip: t('clearSearch'),
+                              icon: Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.teal.withValues(alpha: 0.20),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppTheme.teal.withValues(alpha: 0.45),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  size: 16,
+                                  color: AppTheme.teal,
+                                ),
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                            ),
                           )
                         : null,
                   ),
@@ -251,26 +268,87 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      Text(
-                        '${sortedRoutes.length} ${sortedRoutes.length == 1 ? "route" : "routes"} found',
-                        style: const TextStyle(
-                          color: AppTheme.aqua,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.teal.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppTheme.teal.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.directions_bus_rounded,
+                              size: 15,
+                              color: AppTheme.teal,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${sortedRoutes.length} ${sortedRoutes.length == 1 ? "route" : "routes"} found',
+                              style: const TextStyle(
+                                color: AppTheme.aqua,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const Spacer(),
-                      GestureDetector(
-                        onTap: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                        child: Text(
-                          t('clearSearch'),
-                          style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 12,
-                            decoration: TextDecoration.underline,
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                          child: Ink(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF38E5D8), AppTheme.teal],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.teal.withValues(alpha: 0.40),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.close_rounded,
+                                  size: 15,
+                                  color: AppTheme.navy,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  t('clearSearch'),
+                                  style: const TextStyle(
+                                    color: AppTheme.navy,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -358,7 +436,7 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.teal.withOpacity(0.12),
+                                    color: AppTheme.teal.withValues(alpha: 0.14),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
@@ -383,15 +461,35 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
-                                const SizedBox(height: 20),
-                                OutlinedButton.icon(
+                                const SizedBox(height: 24),
+                                FilledButton.icon(
                                   onPressed: () {
                                     _searchController.clear();
                                     setState(() => _searchQuery = '');
                                   },
-                                  icon: const Icon(Icons.clear_rounded,
-                                      size: 18),
-                                  label: Text(t('clearSearch')),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppTheme.teal,
+                                    foregroundColor: AppTheme.navy,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 28,
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 6,
+                                    shadowColor:
+                                        AppTheme.teal.withValues(alpha: 0.45),
+                                  ),
+                                  icon: const Icon(Icons.refresh_rounded,
+                                      size: 19),
+                                  label: Text(
+                                    t('clearSearch'),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
