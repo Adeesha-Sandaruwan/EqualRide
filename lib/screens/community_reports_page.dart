@@ -7,6 +7,7 @@ import '../services/accessibility_report_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
+import 'report_detail_page.dart';
 
 // ─── Time-ago helper ────────────────────────────────────────────────────────
 
@@ -107,9 +108,13 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
   late final Animation<Offset> _headerSlide;
 
   // Incrementing this causes the StreamBuilder key to change, which disposes
-  // the old stream subscription and opens a fresh one — the only reliable way
-  // to "retry" a stream in Flutter.
+  // the old stream subscription and opens a fresh one.
   int _streamKey = 0;
+
+  /// Active status filter. null = show all reports.
+  String? _activeFilter;
+
+  static const _filterOptions = ['Pending', 'In Progress', 'Resolved'];
 
   void _retry() => setState(() => _streamKey++);
 
@@ -138,6 +143,12 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
   void dispose() {
     _headerAnimCtrl.dispose();
     super.dispose();
+  }
+
+  void _openDetail(BuildContext context, CommunityReport report) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ReportDetailPage(report: report)),
+    );
   }
 
   @override
@@ -205,7 +216,43 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
+
+              // ── Status filter chips ──
+              FadeTransition(
+                opacity: _headerFade,
+                child: SizedBox(
+                  height: 36,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _FilterChip(
+                        label: 'All',
+                        selected: _activeFilter == null,
+                        color: AppTheme.teal,
+                        onTap: () => setState(() => _activeFilter = null),
+                      ),
+                      ..._filterOptions.map((status) {
+                        final color = _statusBackground(status);
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: _FilterChip(
+                            label: status,
+                            selected: _activeFilter == status,
+                            color: color,
+                            onTap: () => setState(() {
+                              _activeFilter =
+                                  _activeFilter == status ? null : status;
+                            }),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
 
               // ── Content ──
               Expanded(
@@ -232,14 +279,35 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
                     if (reports.isEmpty) {
                       return const _EmptyState();
                     }
+
+                    // Apply status filter
+                    final filtered = _activeFilter == null
+                        ? reports
+                        : reports
+                            .where((r) => r.status == _activeFilter)
+                            .toList();
+
+                    if (filtered.isEmpty) {
+                      return _NoFilterResults(
+                        filter: _activeFilter!,
+                        onClear: () =>
+                            setState(() => _activeFilter = null),
+                      );
+                    }
+
                     return ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                      itemCount: reports.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 14),
-                      itemBuilder: (context, index) => _ReportCard(
-                        report: reports[index],
-                        animDelay: index,
-                      ),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 14),
+                      itemBuilder: (context, index) {
+                        final report = filtered[index];
+                        return _ReportCard(
+                          report: report,
+                          animDelay: index,
+                          onTap: () => _openDetail(context, report),
+                        );
+                      },
                     );
                   },
                 ),
@@ -274,6 +342,111 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Filter Chip
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? color.withOpacity(0.18) : Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? color : Colors.white.withOpacity(0.15),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? color : AppTheme.textSecondary,
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  No-filter-results state
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _NoFilterResults extends StatelessWidget {
+  const _NoFilterResults({required this.filter, required this.onClear});
+
+  final String filter;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: GlassPanel(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 64,
+                width: 64,
+                decoration: BoxDecoration(
+                  color: AppTheme.teal.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.filter_list_off_rounded,
+                  color: AppTheme.teal,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No "$filter" reports',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Try a different filter or clear it to\nsee all reports.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onClear,
+                icon: const Icon(Icons.clear_rounded),
+                label: const Text('Clear filter'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Loading State
@@ -390,7 +563,8 @@ class _EmptyStateState extends State<_EmptyState> {
                         ),
                       )
                     : const Icon(Icons.add_circle_outline_rounded),
-                label: Text(_isSeeding ? 'Loading demo data...' : 'Load demo reports'),
+                label: Text(
+                    _isSeeding ? 'Loading demo data...' : 'Load demo reports'),
               ),
             ],
           ),
@@ -468,17 +642,10 @@ class _ErrorState extends StatelessWidget {
                   color: c.iconColor.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  c.icon,
-                  color: c.iconColor,
-                  size: 36,
-                ),
+                child: Icon(c.icon, color: c.iconColor, size: 36),
               ),
               const SizedBox(height: 20),
-              Text(
-                c.title,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              Text(c.title, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 c.body,
@@ -489,7 +656,6 @@ class _ErrorState extends StatelessWidget {
                   height: 1.55,
                 ),
               ),
-              // ── Raw error detail (debug) ──
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
@@ -530,10 +696,12 @@ class _ReportCard extends StatefulWidget {
   const _ReportCard({
     required this.report,
     required this.animDelay,
+    this.onTap,
   });
 
   final CommunityReport report;
   final int animDelay;
+  final VoidCallback? onTap;
 
   @override
   State<_ReportCard> createState() => _ReportCardState();
@@ -558,7 +726,6 @@ class _ReportCardState extends State<_ReportCard>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
 
-    // Stagger: each card fades in after the previous
     Future.delayed(
       Duration(milliseconds: 80 * widget.animDelay),
       () {
@@ -582,111 +749,154 @@ class _ReportCardState extends State<_ReportCard>
       position: _slide,
       child: FadeTransition(
         opacity: _fade,
-        child: GlassPanel(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Issue type row ──
-              Row(
-                children: [
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: GlassPanel(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Issue type row ──
+                Row(
+                  children: [
+                    Container(
+                      height: 42,
+                      width: 42,
+                      decoration: BoxDecoration(
+                        color: iconColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        _issueIcon(r.issueType),
+                        color: iconColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        r.issueType,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontSize: 16,
+                                ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    _StatusBadge(report: r),
+                  ],
+                ),
+
+                const SizedBox(height: 14),
+
+                // ── Location ──
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      color: AppTheme.aqua,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        r.location,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // ── Time + upvotes row ──
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.access_time_rounded,
+                      color: AppTheme.aqua,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _timeAgo(r.createdAt),
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    // Upvote count pill
+                    if (r.upvoteCount > 0) ...[
+                      const Icon(
+                        Icons.thumb_up_alt_rounded,
+                        color: AppTheme.teal,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${r.upvoteCount}',
+                        style: const TextStyle(
+                          color: AppTheme.teal,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+
+                // ── Description preview ──
+                if (r.description.isNotEmpty) ...[
+                  const SizedBox(height: 12),
                   Container(
-                    height: 42,
-                    width: 42,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.15),
+                      color: Colors.white.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      _issueIcon(r.issueType),
-                      color: iconColor,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
                     child: Text(
-                      r.issueType,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontSize: 16,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  // ── Status Badge (tappable) ──
-                  _StatusBadge(report: r),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // ── Location ──
-              Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    color: AppTheme.aqua,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      r.location,
+                      r.description,
                       style: const TextStyle(
                         color: AppTheme.textSecondary,
-                        fontSize: 14,
+                        fontSize: 13.5,
+                        height: 1.45,
                       ),
-                      maxLines: 1,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 6),
 
-              // ── Time ──
-              Row(
-                children: [
-                  const Icon(
-                    Icons.access_time_rounded,
-                    color: AppTheme.aqua,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _timeAgo(r.createdAt),
-                    style: const TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 13,
+                // ── Tap hint ──
+                const SizedBox(height: 10),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Tap for details',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-
-              // ── Description ──
-              if (r.description.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    r.description,
-                    style: const TextStyle(
+                    SizedBox(width: 3),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
                       color: AppTheme.textSecondary,
-                      fontSize: 13.5,
-                      height: 1.45,
+                      size: 11,
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  ],
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -719,7 +929,6 @@ class _StatusBadgeState extends State<_StatusBadge> {
 
   Future<void> _pickStatus(BuildContext context) async {
     final current = widget.report.status;
-    // Capture before any async gap
     final messenger = ScaffoldMessenger.of(context);
     final RenderBox box = context.findRenderObject() as RenderBox;
     final offset = box.localToGlobal(Offset.zero);
@@ -763,8 +972,7 @@ class _StatusBadgeState extends State<_StatusBadge> {
                 s,
                 style: TextStyle(
                   color: isSelected ? bg : AppTheme.textPrimary,
-                  fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   fontSize: 14,
                 ),
               ),
@@ -806,10 +1014,7 @@ class _StatusBadgeState extends State<_StatusBadge> {
         decoration: BoxDecoration(
           color: bg.withOpacity(0.15),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: bg.withOpacity(0.45),
-            width: 1,
-          ),
+          border: Border.all(color: bg.withOpacity(0.45), width: 1),
         ),
         child: _isUpdating
             ? SizedBox(
@@ -833,11 +1038,7 @@ class _StatusBadgeState extends State<_StatusBadge> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_drop_down_rounded,
-                    color: bg,
-                    size: 14,
-                  ),
+                  Icon(Icons.arrow_drop_down_rounded, color: bg, size: 14),
                 ],
               ),
       ),
@@ -852,7 +1053,6 @@ class _StatusBadgeState extends State<_StatusBadge> {
 class _SubmitReportSheet extends StatefulWidget {
   const _SubmitReportSheet({required this.onSubmitted});
 
-  /// Called after a successful submission so the feed can refresh.
   final VoidCallback onSubmitted;
 
   @override
@@ -867,11 +1067,9 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
   final _service = AccessibilityReportService();
 
   String? _issueType;
-  // 'bus' | 'road' — controls whether bus-number field shows
   String _category = 'bus';
   bool _isSubmitting = false;
 
-  // Grouped issue types per category
   static const _busTypes = [
     'Ramp unavailable',
     'Wheelchair space blocked',
@@ -922,6 +1120,7 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
         description: _descriptionCtrl.text,
         location: _locationCtrl.text,
         busNumber: _category == 'bus' ? _busNumberCtrl.text : null,
+        category: _category,
       );
       if (!mounted) return;
       Navigator.pop(context);
@@ -931,13 +1130,13 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
       );
     } on AccessibilityReportException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not submit report. Please try again.')),
+        const SnackBar(
+            content: Text('Could not submit report. Please try again.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -946,7 +1145,6 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // Pad bottom by keyboard height so the form isn't hidden
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -1023,7 +1221,7 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
                 value: _category,
                 onChanged: (v) => setState(() {
                   _category = v;
-                  _issueType = null; // reset type when category changes
+                  _issueType = null;
                 }),
               ),
               const SizedBox(height: 20),
@@ -1050,7 +1248,7 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
               ),
               const SizedBox(height: 16),
 
-              // ── Bus number (only for bus issues) ──
+              // ── Bus number (bus only) ──
               if (_category == 'bus') ...[
                 _SectionLabel(label: 'Bus number (optional)'),
                 const SizedBox(height: 10),
@@ -1123,7 +1321,8 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
                         ),
                       )
                     : const Icon(Icons.send_rounded),
-                label: Text(_isSubmitting ? 'Submitting…' : 'Submit report'),
+                label:
+                    Text(_isSubmitting ? 'Submitting…' : 'Submit report'),
               ),
             ],
           ),
@@ -1154,10 +1353,7 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _CategoryToggle extends StatelessWidget {
-  const _CategoryToggle({
-    required this.value,
-    required this.onChanged,
-  });
+  const _CategoryToggle({required this.value, required this.onChanged});
 
   final String value;
   final ValueChanged<String> onChanged;
