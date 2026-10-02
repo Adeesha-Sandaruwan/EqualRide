@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/route_details.dart';
 import '../theme/app_theme.dart';
@@ -187,14 +188,7 @@ class _RouteSummaryCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Map view will be available in the upcoming update.'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
+              onPressed: () => _openGoogleMaps(context),
               icon: const Icon(Icons.map_outlined, size: 20),
               label: const Text(
                 'View in Map',
@@ -221,6 +215,46 @@ class _RouteSummaryCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _openGoogleMaps(BuildContext context) async {
+    final start = routeDetails.startLocation.trim();
+    final dest = routeDetails.destination.trim();
+
+    final isGenericStart = start.isEmpty ||
+        start.toLowerCase() == 'home' ||
+        start.toLowerCase() == 'current location';
+
+    final Uri googleMapsUrl = isGenericStart
+        ? Uri.parse(
+            'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(dest)}&travelmode=transit',
+          )
+        : Uri.parse(
+            'https://www.google.com/maps/dir/?api=1&origin=${Uri.encodeComponent(start)}&destination=${Uri.encodeComponent(dest)}&travelmode=transit',
+          );
+
+    try {
+      final launched = await launchUrl(
+        googleMapsUrl,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched && context.mounted) {
+        await launchUrl(
+          googleMapsUrl,
+          mode: LaunchMode.platformDefault,
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open Google Maps.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 }
 
