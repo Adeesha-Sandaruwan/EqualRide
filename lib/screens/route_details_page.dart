@@ -183,6 +183,41 @@ class _RouteSummaryCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Map view will be available in the upcoming update.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.map_outlined, size: 20),
+              label: const Text(
+                'View in Map',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: AppTheme.teal.withValues(alpha: 0.55),
+                  width: 1.2,
+                ),
+                backgroundColor: AppTheme.teal.withValues(alpha: 0.10),
+                foregroundColor: AppTheme.aqua,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

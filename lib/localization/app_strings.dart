@@ -51,6 +51,7 @@ class AppStrings {
     'compare': 'Compare',
     'clear': 'Clear',
     'viewRoute': 'View route',
+    'viewInMap': 'View in Map',
     'demoNotice':
         'Demo route data — a verified public-transport data source will replace this later.',
     'enterDestination': 'Enter a destination first.',
@@ -99,6 +100,7 @@ class AppStrings {
     'compare': 'සසඳන්න',
     'clear': 'ඉවත් කරන්න',
     'viewRoute': 'මාර්ගය බලන්න',
+    'viewInMap': 'සිතියමෙහි බලන්න',
     'demoNotice':
         'මෙය නිරූපණ මාර්ග දත්ත වේ — සත්‍යාපිත පොදු ප්‍රවාහන දත්ත පසුව එක් කෙරේ.',
     'enterDestination': 'පළමුව ගමනාන්තයක් ඇතුළත් කරන්න.',
