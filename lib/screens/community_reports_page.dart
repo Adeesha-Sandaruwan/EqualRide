@@ -7,6 +7,7 @@ import '../services/accessibility_report_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
+import '../widgets/impact_level_selector.dart';
 
 // ─── Time-ago helper ────────────────────────────────────────────────────────
 
@@ -85,6 +86,19 @@ Color _statusBackground(String status) {
       return const Color(0xFF64B5F6); // blue
     default: // Pending
       return const Color(0xFFFFB74D); // amber
+  }
+}
+
+Color _impactColor(String impactLevel) {
+  switch (impactLevel) {
+    case 'Low':
+      return const Color(0xFF66BB6A);
+    case 'High':
+      return const Color(0xFFFFB74D);
+    case 'Critical':
+      return const Color(0xFFE57373);
+    default:
+      return const Color(0xFF64B5F6);
   }
 }
 
@@ -663,6 +677,8 @@ class _ReportCardState extends State<_ReportCard>
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+              _ImpactBadge(impactLevel: r.impactLevel),
 
               // ── Description ──
               if (r.description.isNotEmpty) ...[
@@ -689,6 +705,41 @@ class _ReportCardState extends State<_ReportCard>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ImpactBadge extends StatelessWidget {
+  const _ImpactBadge({required this.impactLevel});
+
+  final String impactLevel;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _impactColor(impactLevel);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.priority_high_rounded, color: color, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            'Access impact: $impactLevel',
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -867,6 +918,7 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
   final _service = AccessibilityReportService();
 
   String? _issueType;
+  String _impactLevel = CommunityReport.defaultImpactLevel;
   // 'bus' | 'road' — controls whether bus-number field shows
   String _category = 'bus';
   bool _isSubmitting = false;
@@ -921,6 +973,7 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
         issueType: _issueType!,
         description: _descriptionCtrl.text,
         location: _locationCtrl.text,
+        impactLevel: _impactLevel,
         busNumber: _category == 'bus' ? _busNumberCtrl.text : null,
       );
       if (!mounted) return;
@@ -1047,6 +1100,13 @@ class _SubmitReportSheetState extends State<_SubmitReportSheet> {
                 onChanged: (v) => setState(() => _issueType = v),
                 validator: (v) =>
                     v == null ? 'Please select an issue type.' : null,
+              ),
+              const SizedBox(height: 16),
+
+              ImpactLevelSelector(
+                value: _impactLevel,
+                enabled: !_isSubmitting,
+                onChanged: (value) => setState(() => _impactLevel = value),
               ),
               const SizedBox(height: 16),
 

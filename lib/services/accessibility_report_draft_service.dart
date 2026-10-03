@@ -2,16 +2,20 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/community_report.dart';
+
 class AccessibilityReportDraft {
   const AccessibilityReportDraft({
     required this.issueType,
     required this.description,
     required this.location,
+    this.impactLevel = CommunityReport.defaultImpactLevel,
   });
 
   final String? issueType;
   final String description;
   final String location;
+  final String impactLevel;
 
   bool get hasContent =>
       (issueType?.trim().isNotEmpty ?? false) ||
@@ -23,13 +27,15 @@ class AccessibilityReportDraft {
     'issueType': issueType,
     'description': description,
     'location': location,
+    'impactLevel': impactLevel,
   };
 
   factory AccessibilityReportDraft.fromJson(Map<String, dynamic> json) {
     if (json['version'] != 1 ||
         (json['issueType'] != null && json['issueType'] is! String) ||
         json['description'] is! String ||
-        json['location'] is! String) {
+        json['location'] is! String ||
+        (json['impactLevel'] != null && json['impactLevel'] is! String)) {
       throw const FormatException('Saved report draft has an invalid format.');
     }
 
@@ -37,6 +43,10 @@ class AccessibilityReportDraft {
       issueType: json['issueType'] as String?,
       description: json['description'] as String,
       location: json['location'] as String,
+      impactLevel: CommunityReport.impactLevelDescriptions
+              .containsKey(json['impactLevel'])
+          ? json['impactLevel'] as String
+          : CommunityReport.defaultImpactLevel,
     );
   }
 }

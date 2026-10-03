@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'accessibility_map_location_picker_page.dart';
+import '../models/community_report.dart';
 import '../services/accessibility_report_draft_service.dart';
 import '../services/accessibility_report_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
+import '../widgets/impact_level_selector.dart';
 import '../widgets/glass_panel.dart';
 
 class AccessibilityReportPage extends StatefulWidget {
@@ -28,6 +30,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   Timer? draftSaveTimer;
 
   String? issueType;
+  String impactLevel = CommunityReport.defaultImpactLevel;
   bool isSubmitting = false;
   bool isReviewing = false;
   bool isDraftLoading = true;
@@ -96,6 +99,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     issueType: issueType,
     description: descriptionController.text,
     location: locationController.text,
+    impactLevel: impactLevel,
   );
 
   @override
@@ -133,6 +137,11 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       descriptionController.text = draft.description;
       locationController.text = draft.location;
       issueType = issueTypes.contains(draft.issueType) ? draft.issueType : null;
+      impactLevel = CommunityReport.impactLevelDescriptions.containsKey(
+        draft.impactLevel,
+      )
+          ? draft.impactLevel
+          : CommunityReport.defaultImpactLevel;
     }
     setState(() {
       isDraftLoading = false;
@@ -240,6 +249,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       formKey.currentState?.reset();
       setState(() {
         issueType = null;
+        impactLevel = CommunityReport.defaultImpactLevel;
         hasSavedDraft = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -366,6 +376,13 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                     ),
                     const SizedBox(height: 10),
                     _ReportReviewDetail(
+                      icon: Icons.priority_high_rounded,
+                      label: 'ACCESS IMPACT',
+                      value:
+                          '$impactLevel — ${CommunityReport.impactLevelDescriptions[impactLevel]}',
+                    ),
+                    const SizedBox(height: 10),
+                    _ReportReviewDetail(
                       icon: Icons.location_on_outlined,
                       label: 'ROUTE / STATION',
                       value: locationController.text,
@@ -425,6 +442,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
         issueType: issueType!,
         description: descriptionController.text,
         location: locationController.text,
+        impactLevel: impactLevel,
       );
 
       if (!mounted) return;
@@ -447,6 +465,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       formKey.currentState?.reset();
       setState(() {
         issueType = null;
+        impactLevel = CommunityReport.defaultImpactLevel;
         hasSavedDraft = false;
       });
       Navigator.of(context).pop();
@@ -618,6 +637,18 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                         validator: (value) => value == null || value.isEmpty
                             ? 'Please select an issue type.'
                             : null,
+                      ),
+                      const SizedBox(height: 18),
+                      ImpactLevelSelector(
+                        value: impactLevel,
+                        enabled:
+                            !isDraftLoading &&
+                            !isSubmitting &&
+                            !isDiscardingDraft,
+                        onChanged: (value) {
+                          setState(() => impactLevel = value);
+                          scheduleDraftSave();
+                        },
                       ),
                       const SizedBox(height: 18),
                       Container(
