@@ -266,34 +266,85 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       return await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Review your report'),
+              backgroundColor: AppTheme.navyLight,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+              contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              title: Row(
+                children: [
+                  Container(
+                    height: 48,
+                    width: 48,
+                    decoration: BoxDecoration(
+                      color: AppTheme.teal.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.fact_check_outlined,
+                      color: AppTheme.teal,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Review your report'),
+                        SizedBox(height: 4),
+                        Text(
+                          'Check these details before sending',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _ReportReviewDetail(label: 'Issue type', value: issueType!),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _ReportReviewDetail(
-                      label: 'Route / station location',
+                      icon: Icons.report_problem_outlined,
+                      label: 'ISSUE TYPE',
+                      value: issueType!,
+                    ),
+                    const SizedBox(height: 10),
+                    _ReportReviewDetail(
+                      icon: Icons.location_on_outlined,
+                      label: 'ROUTE / STATION',
                       value: locationController.text,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     _ReportReviewDetail(
-                      label: 'Description',
+                      icon: Icons.notes_rounded,
+                      label: 'DESCRIPTION',
                       value: descriptionController.text,
                     ),
                   ],
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Edit report'),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Edit report'),
                 ),
-                FilledButton(
+                FilledButton.icon(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Submit report'),
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text('Submit report'),
                 ),
               ],
             ),
@@ -652,30 +703,56 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
 }
 
 class _ReportReviewDetail extends StatelessWidget {
-  const _ReportReviewDetail({required this.label, required this.value});
+  const _ReportReviewDetail({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
+  final IconData icon;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelLarge?.copyWith(color: AppTheme.textSecondary),
-        ),
-        const SizedBox(height: 4),
-        SelectableText(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: AppTheme.textPrimary),
-        ),
-      ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppTheme.teal, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppTheme.aqua,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                SelectableText(
+                  value,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textPrimary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
