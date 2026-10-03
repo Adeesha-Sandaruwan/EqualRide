@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../services/accessibility_report_draft_service.dart';
 import '../services/accessibility_report_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
@@ -17,10 +20,15 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   final formKey = GlobalKey<FormState>();
   final descriptionController = TextEditingController();
   final locationController = TextEditingController();
+  final draftService = AccessibilityReportDraftService();
   final reportService = AccessibilityReportService();
+  Future<void> draftWriteQueue = Future<void>.value();
+  Timer? draftSaveTimer;
 
   String? issueType;
   bool isSubmitting = false;
+  bool isDraftLoading = true;
+  bool hasShownDraftSaveError = false;
 
   static const minimumDescriptionLength = 20;
 
@@ -77,15 +85,93 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   get selectedIssueGuidance =>
       issueGuidance[issueType] ?? issueGuidance['Other']!;
 
+  AccessibilityReportDraft get currentDraft => AccessibilityReportDraft(
+    issueType: issueType,
+    description: descriptionController.text,
+    location: locationController.text,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(restoreDraft());
+  }
+
   @override
   void dispose() {
+    if (draftSaveTimer?.isActive ?? false) {
+      draftSaveTimer?.cancel();
+      unawaited(enqueueDraftSave(currentDraft));
+    }
     descriptionController.dispose();
     locationController.dispose();
     super.dispose();
   }
 
+  Future<void> restoreDraft() async {
+    AccessibilityReportDraft? draft;
+    Object? restoreError;
+
+    try {
+      draft = await draftService.loadDraft();
+    } catch (error, stackTrace) {
+      restoreError = error;
+      debugPrint('Unable to restore accessibility report draft: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
+    if (!mounted) return;
+
+    if (draft != null) {
+      descriptionController.text = draft.description;
+      locationController.text = draft.location;
+      issueType = issueTypes.contains(draft.issueType) ? draft.issueType : null;
+    }
+    setState(() => isDraftLoading = false);
+
+    if (draft != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your saved report draft was restored.')),
+      );
+    } else if (restoreError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('We could not restore your saved report draft.'),
+        ),
+      );
+    }
+  }
+
+  void scheduleDraftSave() {
+    draftSaveTimer?.cancel();
+    draftSaveTimer = Timer(const Duration(milliseconds: 500), () {
+      unawaited(enqueueDraftSave(currentDraft));
+    });
+  }
+
+  Future<void> enqueueDraftSave(AccessibilityReportDraft draft) {
+    draftWriteQueue = draftWriteQueue.then((_) async {
+      try {
+        await draftService.saveDraft(draft);
+        hasShownDraftSaveError = false;
+      } catch (error, stackTrace) {
+        debugPrint('Unable to save accessibility report draft: $error');
+        debugPrintStack(stackTrace: stackTrace);
+        if (mounted && !hasShownDraftSaveError) {
+          hasShownDraftSaveError = true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Your report draft could not be saved on this device.'),
+            ),
+          );
+        }
+      }
+    });
+    return draftWriteQueue;
+  }
+
   Future<void> submitReport() async {
-    if (isSubmitting) return;
+    if (isSubmitting || isDraftLoading) return;
 
     descriptionController.text = descriptionController.text.trim();
     locationController.text = locationController.text.trim();
@@ -100,6 +186,8 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     setState(() => isSubmitting = true);
 
     try {
+      draftSaveTimer?.cancel();
+      await enqueueDraftSave(currentDraft);
       await reportService.submitReport(
         issueType: issueType!,
         description: descriptionController.text,
@@ -108,14 +196,27 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
 
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
+      String? draftCleanupWarning;
+      try {
+        await draftWriteQueue;
+        await draftService.clearDraft();
+      } catch (error, stackTrace) {
+        debugPrint('Unable to clear submitted accessibility report draft: $error');
+        debugPrintStack(stackTrace: stackTrace);
+        draftCleanupWarning =
+            'Report submitted, but the saved draft could not be cleared.';
+      }
+      if (!mounted) return;
       descriptionController.clear();
       locationController.clear();
       formKey.currentState?.reset();
       setState(() => issueType = null);
       Navigator.of(context).pop();
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Accessibility report submitted successfully.'),
+        SnackBar(
+          content: Text(
+            draftCleanupWarning ?? 'Accessibility report submitted successfully.',
+          ),
         ),
       );
     } on AccessibilityReportException catch (error) {
@@ -168,6 +269,10 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                   'Help us make every journey more accessible by sharing what you found.',
                   style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
                 ),
+                if (isDraftLoading) ...[
+                  const SizedBox(height: 16),
+                  const LinearProgressIndicator(),
+                ],
                 const SizedBox(height: 28),
                 GlassPanel(
                   child: Column(
@@ -191,8 +296,11 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                               ),
                             )
                             .toList(),
-                        onChanged: (value) {
+                        onChanged: isDraftLoading || isSubmitting
+                            ? null
+                            : (value) {
                           setState(() => issueType = value);
+                          scheduleDraftSave();
                         },
                         validator: (value) => value == null || value.isEmpty
                             ? 'Please select an issue type.'
@@ -201,6 +309,8 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                       const SizedBox(height: 18),
                       TextFormField(
                         controller: descriptionController,
+                        enabled: !isDraftLoading && !isSubmitting,
+                        onChanged: (_) => scheduleDraftSave(),
                         keyboardType: TextInputType.multiline,
                         textInputAction: TextInputAction.newline,
                         minLines: 4,
@@ -245,6 +355,8 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                       const SizedBox(height: 18),
                       TextFormField(
                         controller: locationController,
+                        enabled: !isDraftLoading && !isSubmitting,
+                        onChanged: (_) => scheduleDraftSave(),
                         keyboardType: TextInputType.text,
                         textInputAction: TextInputAction.done,
                         textCapitalization: TextCapitalization.words,
@@ -279,7 +391,9 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                 ),
                 const SizedBox(height: 28),
                 FilledButton.icon(
-                  onPressed: isSubmitting ? null : submitReport,
+                  onPressed: isSubmitting || isDraftLoading
+                      ? null
+                      : submitReport,
                   icon: isSubmitting
                       ? const SizedBox(
                           height: 22,
@@ -291,7 +405,11 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                         )
                       : const Icon(Icons.send_rounded),
                   label: Text(
-                    isSubmitting ? 'Checking report...' : 'Submit report',
+                    isDraftLoading
+                        ? 'Restoring draft...'
+                        : isSubmitting
+                        ? 'Checking report...'
+                        : 'Submit report',
                   ),
                 ),
               ],
