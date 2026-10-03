@@ -22,6 +22,8 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   String? issueType;
   bool isSubmitting = false;
 
+  static const minimumDescriptionLength = 20;
+
   static const issueTypes = [
     'Wheelchair access',
     'Ramp unavailable',
@@ -213,12 +215,28 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                               hintText: selectedIssueGuidance.descriptionHint,
                               helperText: selectedIssueGuidance.descriptionHelp,
                             ),
+                        buildCounter:
+                            (
+                              context, {
+                              required currentLength,
+                              required isFocused,
+                              maxLength,
+                            }) {
+                              final countLabel =
+                                  currentLength < minimumDescriptionLength
+                                  ? '$currentLength / $minimumDescriptionLength minimum'
+                                  : '$currentLength characters';
+                              return Text(
+                                countLabel,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              );
+                            },
                         validator: (value) {
                           final description = value?.trim() ?? '';
                           if (description.isEmpty) {
                             return 'Please describe the accessibility issue.';
                           }
-                          if (description.length < 20) {
+                          if (description.length < minimumDescriptionLength) {
                             return 'Please add a little more detail (20 characters minimum).';
                           }
                           return null;
@@ -236,7 +254,21 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                               prefixIcon: Icon(Icons.location_on_outlined),
                             ).copyWith(
                               hintText: selectedIssueGuidance.locationHint,
+                              helperText:
+                                  'Required. Enter the route, stop, or station.',
                             ),
+                        buildCounter:
+                            (
+                              context, {
+                              required currentLength,
+                              required isFocused,
+                              maxLength,
+                            }) {
+                              return Text(
+                                '$currentLength characters',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              );
+                            },
                         validator: (value) =>
                             value == null || value.trim().isEmpty
                             ? 'Please enter the route or station location.'
