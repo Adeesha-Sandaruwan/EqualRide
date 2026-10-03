@@ -28,6 +28,9 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   String? issueType;
   bool isSubmitting = false;
   bool isDraftLoading = true;
+  bool isDraftSaving = false;
+  bool isDiscardingDraft = false;
+  bool hasSavedDraft = false;
   bool hasShownDraftSaveError = false;
 
   static const minimumDescriptionLength = 20;
@@ -127,7 +130,10 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       locationController.text = draft.location;
       issueType = issueTypes.contains(draft.issueType) ? draft.issueType : null;
     }
-    setState(() => isDraftLoading = false);
+    setState(() {
+      isDraftLoading = false;
+      hasSavedDraft = draft != null;
+    });
 
     if (draft != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -143,7 +149,9 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   }
 
   void scheduleDraftSave() {
+    if (isDraftLoading || isDiscardingDraft || isSubmitting) return;
     draftSaveTimer?.cancel();
+    setState(() => isDraftSaving = true);
     draftSaveTimer = Timer(const Duration(milliseconds: 500), () {
       unawaited(enqueueDraftSave(currentDraft));
     });
@@ -153,15 +161,24 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     draftWriteQueue = draftWriteQueue.then((_) async {
       try {
         await draftService.saveDraft(draft);
+        if (mounted) {
+          setState(() {
+            hasSavedDraft = draft.hasContent;
+            isDraftSaving = false;
+          });
+        }
         hasShownDraftSaveError = false;
       } catch (error, stackTrace) {
         debugPrint('Unable to save accessibility report draft: $error');
         debugPrintStack(stackTrace: stackTrace);
+        if (mounted) setState(() => isDraftSaving = false);
         if (mounted && !hasShownDraftSaveError) {
           hasShownDraftSaveError = true;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Your report draft could not be saved on this device.'),
+              content: Text(
+                'Your report draft could not be saved on this device.',
+              ),
             ),
           );
         }
@@ -170,8 +187,76 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     return draftWriteQueue;
   }
 
+  Future<void> restoreSavedDraft() async {
+    if (isDraftLoading || isSubmitting || isDiscardingDraft) return;
+    draftSaveTimer?.cancel();
+    setState(() {
+      isDraftLoading = true;
+      isDraftSaving = false;
+    });
+    await draftWriteQueue;
+    await restoreDraft();
+  }
+
+  Future<void> discardSavedDraft() async {
+    if (isDraftLoading || isSubmitting || isDiscardingDraft) return;
+
+    final shouldDiscard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Discard saved draft?'),
+        content: const Text(
+          'This will remove the report draft saved on this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep draft'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (shouldDiscard != true || !mounted) return;
+
+    draftSaveTimer?.cancel();
+    setState(() {
+      isDiscardingDraft = true;
+      isDraftSaving = false;
+    });
+    try {
+      await draftWriteQueue;
+      await draftService.clearDraft();
+      if (!mounted) return;
+      descriptionController.clear();
+      locationController.clear();
+      formKey.currentState?.reset();
+      setState(() {
+        issueType = null;
+        hasSavedDraft = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saved report draft discarded.')),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Unable to discard accessibility report draft: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('We could not discard the saved report draft.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => isDiscardingDraft = false);
+    }
+  }
+
   Future<void> submitReport() async {
-    if (isSubmitting || isDraftLoading) return;
+    if (isSubmitting || isDraftLoading || isDiscardingDraft) return;
 
     descriptionController.text = descriptionController.text.trim();
     locationController.text = locationController.text.trim();
@@ -201,7 +286,9 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
         await draftWriteQueue;
         await draftService.clearDraft();
       } catch (error, stackTrace) {
-        debugPrint('Unable to clear submitted accessibility report draft: $error');
+        debugPrint(
+          'Unable to clear submitted accessibility report draft: $error',
+        );
         debugPrintStack(stackTrace: stackTrace);
         draftCleanupWarning =
             'Report submitted, but the saved draft could not be cleared.';
@@ -210,12 +297,16 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       descriptionController.clear();
       locationController.clear();
       formKey.currentState?.reset();
-      setState(() => issueType = null);
+      setState(() {
+        issueType = null;
+        hasSavedDraft = false;
+      });
       Navigator.of(context).pop();
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            draftCleanupWarning ?? 'Accessibility report submitted successfully.',
+            draftCleanupWarning ??
+                'Accessibility report submitted successfully.',
           ),
         ),
       );
@@ -273,6 +364,79 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                   const SizedBox(height: 16),
                   const LinearProgressIndicator(),
                 ],
+                if (hasSavedDraft || isDraftSaving) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.teal.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppTheme.teal.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.drafts_outlined,
+                              color: AppTheme.teal,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                isDraftSaving
+                                    ? 'Saving report draft on this device...'
+                                    : 'Report draft saved on this device',
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (hasSavedDraft) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            'You can restore the saved version or discard it.',
+                            style: TextStyle(color: AppTheme.textSecondary),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed:
+                                    isDraftLoading ||
+                                        isSubmitting ||
+                                        isDraftSaving ||
+                                        isDiscardingDraft
+                                    ? null
+                                    : restoreSavedDraft,
+                                icon: const Icon(Icons.restore_rounded),
+                                label: const Text('Restore draft'),
+                              ),
+                              TextButton.icon(
+                                onPressed:
+                                    isDraftLoading ||
+                                        isSubmitting ||
+                                        isDiscardingDraft
+                                    ? null
+                                    : discardSavedDraft,
+                                icon: const Icon(Icons.delete_outline_rounded),
+                                label: const Text('Discard'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 28),
                 GlassPanel(
                   child: Column(
@@ -296,12 +460,13 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                               ),
                             )
                             .toList(),
-                        onChanged: isDraftLoading || isSubmitting
+                        onChanged:
+                            isDraftLoading || isSubmitting || isDiscardingDraft
                             ? null
                             : (value) {
-                          setState(() => issueType = value);
-                          scheduleDraftSave();
-                        },
+                                setState(() => issueType = value);
+                                scheduleDraftSave();
+                              },
                         validator: (value) => value == null || value.isEmpty
                             ? 'Please select an issue type.'
                             : null,
@@ -309,7 +474,10 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                       const SizedBox(height: 18),
                       TextFormField(
                         controller: descriptionController,
-                        enabled: !isDraftLoading && !isSubmitting,
+                        enabled:
+                            !isDraftLoading &&
+                            !isSubmitting &&
+                            !isDiscardingDraft,
                         onChanged: (_) => scheduleDraftSave(),
                         keyboardType: TextInputType.multiline,
                         textInputAction: TextInputAction.newline,
@@ -355,7 +523,10 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                       const SizedBox(height: 18),
                       TextFormField(
                         controller: locationController,
-                        enabled: !isDraftLoading && !isSubmitting,
+                        enabled:
+                            !isDraftLoading &&
+                            !isSubmitting &&
+                            !isDiscardingDraft,
                         onChanged: (_) => scheduleDraftSave(),
                         keyboardType: TextInputType.text,
                         textInputAction: TextInputAction.done,
@@ -391,7 +562,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                 ),
                 const SizedBox(height: 28),
                 FilledButton.icon(
-                  onPressed: isSubmitting || isDraftLoading
+                  onPressed: isSubmitting || isDraftLoading || isDiscardingDraft
                       ? null
                       : submitReport,
                   icon: isSubmitting
