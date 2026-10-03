@@ -32,6 +32,49 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     'Other',
   ];
 
+  static const issueGuidance = {
+    'Wheelchair access': (
+      descriptionHint: 'Describe the access available and any barriers.',
+      descriptionHelp: 'Mention ramps, door width, or step-free access.',
+      locationHint: 'For example, the station entrance or platform',
+    ),
+    'Ramp unavailable': (
+      descriptionHint: 'Describe when and where the ramp was unavailable.',
+      descriptionHelp: 'Include the route or vehicle and what happened.',
+      locationHint: 'For example, Bus 138 at Central Station',
+    ),
+    'Lift unavailable': (
+      descriptionHint: 'Describe which lift was unavailable.',
+      descriptionHelp:
+          'Include the station, platform, and any alternative route.',
+      locationHint: 'For example, Central Station platform 2',
+    ),
+    'Step-free access issue': (
+      descriptionHint: 'Describe where the step-free route was blocked.',
+      descriptionHelp: 'Mention steps, slopes, or barriers along the route.',
+      locationHint: 'For example, the entrance to platform 2',
+    ),
+    'Crowding': (
+      descriptionHint: 'Describe how crowding affected access or boarding.',
+      descriptionHelp: 'Include the time and how it affected your journey.',
+      locationHint: 'For example, the 8 AM bus stop on Main Street',
+    ),
+    'Accessibility information incorrect': (
+      descriptionHint: 'Explain what information is inaccurate.',
+      descriptionHelp: 'Compare the information with what you found on site.',
+      locationHint: 'For example, the station or route shown in the app',
+    ),
+    'Other': (
+      descriptionHint: 'Describe the accessibility issue you encountered.',
+      descriptionHelp: 'Share what happened and how it affected your journey.',
+      locationHint: 'For example, a route, stop, or station',
+    ),
+  };
+
+  ({String descriptionHint, String descriptionHelp, String locationHint})
+  get selectedIssueGuidance =>
+      issueGuidance[issueType] ?? issueGuidance['Other']!;
+
   @override
   void dispose() {
     descriptionController.dispose();
@@ -75,9 +118,9 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       );
     } on AccessibilityReportException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -121,10 +164,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                 const SizedBox(height: 12),
                 const Text(
                   'Help us make every journey more accessible by sharing what you found.',
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
                 ),
                 const SizedBox(height: 28),
                 GlassPanel(
@@ -152,10 +192,9 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                         onChanged: (value) {
                           setState(() => issueType = value);
                         },
-                        validator: (value) =>
-                            value == null || value.isEmpty
-                                ? 'Please select an issue type.'
-                                : null,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Please select an issue type.'
+                            : null,
                       ),
                       const SizedBox(height: 18),
                       TextFormField(
@@ -165,12 +204,15 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                         minLines: 4,
                         maxLines: 7,
                         textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          hintText: 'Tell us what happened',
-                          alignLabelWithHint: true,
-                          prefixIcon: Icon(Icons.notes_rounded),
-                        ),
+                        decoration:
+                            const InputDecoration(
+                              labelText: 'Description',
+                              alignLabelWithHint: true,
+                              prefixIcon: Icon(Icons.notes_rounded),
+                            ).copyWith(
+                              hintText: selectedIssueGuidance.descriptionHint,
+                              helperText: selectedIssueGuidance.descriptionHelp,
+                            ),
                         validator: (value) {
                           final description = value?.trim() ?? '';
                           if (description.isEmpty) {
@@ -188,14 +230,17 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                         keyboardType: TextInputType.text,
                         textInputAction: TextInputAction.done,
                         textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(
-                          labelText: 'Route / station location',
-                          hintText: 'For example, Central Station platform 2',
-                          prefixIcon: Icon(Icons.location_on_outlined),
-                        ),
-                        validator: (value) => value == null || value.trim().isEmpty
-                          ? 'Please enter the route or station location.'
-                          : null,
+                        decoration:
+                            const InputDecoration(
+                              labelText: 'Route / station location',
+                              prefixIcon: Icon(Icons.location_on_outlined),
+                            ).copyWith(
+                              hintText: selectedIssueGuidance.locationHint,
+                            ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Please enter the route or station location.'
+                            : null,
                       ),
                     ],
                   ),
@@ -213,7 +258,9 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                           ),
                         )
                       : const Icon(Icons.send_rounded),
-                  label: Text(isSubmitting ? 'Checking report...' : 'Submit report'),
+                  label: Text(
+                    isSubmitting ? 'Checking report...' : 'Submit report',
+                  ),
                 ),
               ],
             ),
