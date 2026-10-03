@@ -27,6 +27,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
 
   String? issueType;
   bool isSubmitting = false;
+  bool isReviewing = false;
   bool isDraftLoading = true;
   bool isDraftSaving = false;
   bool isDiscardingDraft = false;
@@ -255,8 +256,58 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     }
   }
 
+  Future<bool> confirmReportDetails() async {
+    if (isReviewing || isSubmitting || isDraftLoading || isDiscardingDraft) {
+      return false;
+    }
+
+    setState(() => isReviewing = true);
+    try {
+      return await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Review your report'),
+              content: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ReportReviewDetail(label: 'Issue type', value: issueType!),
+                    const SizedBox(height: 16),
+                    _ReportReviewDetail(
+                      label: 'Route / station location',
+                      value: locationController.text,
+                    ),
+                    const SizedBox(height: 16),
+                    _ReportReviewDetail(
+                      label: 'Description',
+                      value: descriptionController.text,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Edit report'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Submit report'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+    } finally {
+      if (mounted) setState(() => isReviewing = false);
+    }
+  }
+
   Future<void> submitReport() async {
-    if (isSubmitting || isDraftLoading || isDiscardingDraft) return;
+    if (isSubmitting || isReviewing || isDraftLoading || isDiscardingDraft) {
+      return;
+    }
 
     descriptionController.text = descriptionController.text.trim();
     locationController.text = locationController.text.trim();
@@ -267,6 +318,8 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       );
       return;
     }
+
+    if (!await confirmReportDetails() || !mounted) return;
 
     setState(() => isSubmitting = true);
 
@@ -562,7 +615,11 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                 ),
                 const SizedBox(height: 28),
                 FilledButton.icon(
-                  onPressed: isSubmitting || isDraftLoading || isDiscardingDraft
+                  onPressed:
+                      isSubmitting ||
+                          isReviewing ||
+                          isDraftLoading ||
+                          isDiscardingDraft
                       ? null
                       : submitReport,
                   icon: isSubmitting
@@ -578,6 +635,8 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                   label: Text(
                     isDraftLoading
                         ? 'Restoring draft...'
+                        : isReviewing
+                        ? 'Reviewing report...'
                         : isSubmitting
                         ? 'Checking report...'
                         : 'Submit report',
@@ -588,6 +647,35 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ReportReviewDetail extends StatelessWidget {
+  const _ReportReviewDetail({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 4),
+        SelectableText(
+          value,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge?.copyWith(color: AppTheme.textPrimary),
+        ),
+      ],
     );
   }
 }
