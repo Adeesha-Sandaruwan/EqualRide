@@ -137,9 +137,8 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       descriptionController.text = draft.description;
       locationController.text = draft.location;
       issueType = issueTypes.contains(draft.issueType) ? draft.issueType : null;
-      impactLevel = CommunityReport.impactLevelDescriptions.containsKey(
-        draft.impactLevel,
-      )
+      impactLevel =
+          CommunityReport.impactLevelDescriptions.containsKey(draft.impactLevel)
           ? draft.impactLevel
           : CommunityReport.defaultImpactLevel;
     }
@@ -301,7 +300,9 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not open the map picker. Please enter a location manually.'),
+            content: Text(
+              'Could not open the map picker. Please enter a location manually.',
+            ),
           ),
         );
       }
@@ -319,96 +320,125 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     try {
       return await showDialog<bool>(
             context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: AppTheme.navyLight,
-              surfaceTintColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
-              ),
-              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-              contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-              actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              title: Row(
-                children: [
-                  Container(
-                    height: 48,
-                    width: 48,
-                    decoration: BoxDecoration(
-                      color: AppTheme.teal.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.fact_check_outlined,
-                      color: AppTheme.teal,
-                    ),
+            builder: (context) {
+              return Dialog(
+                backgroundColor: AppTheme.navyLight,
+                surfaceTintColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+                ),
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 480,
+                    maxHeight: MediaQuery.sizeOf(context).height * 0.82,
                   ),
-                  const SizedBox(width: 14),
-                  const Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(22),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Review your report'),
-                        SizedBox(height: 4),
-                        Text(
-                          'Check these details before sending',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.normal,
+                        Row(
+                          children: [
+                            Container(
+                              height: 48,
+                              width: 48,
+                              decoration: BoxDecoration(
+                                color: AppTheme.teal.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Icon(
+                                Icons.fact_check_outlined,
+                                color: AppTheme.teal,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Review your report',
+                                    style: TextStyle(
+                                      color: AppTheme.textPrimary,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Make sure everything looks right.',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Flexible(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                _ReportReviewDetail(
+                                  icon: Icons.report_problem_outlined,
+                                  label: 'ISSUE TYPE',
+                                  value: issueType!,
+                                ),
+                                const SizedBox(height: 10),
+                                _ReportReviewDetail(
+                                  icon: Icons.priority_high_rounded,
+                                  label: 'ACCESS IMPACT',
+                                  value:
+                                      '$impactLevel — ${CommunityReport.impactLevelDescriptions[impactLevel]}',
+                                ),
+                                const SizedBox(height: 10),
+                                _ReportReviewDetail(
+                                  icon: Icons.location_on_outlined,
+                                  label: 'LOCATION',
+                                  value: locationController.text,
+                                ),
+                                const SizedBox(height: 10),
+                                _ReportReviewDetail(
+                                  icon: Icons.notes_rounded,
+                                  label: 'WHAT HAPPENED',
+                                  value: descriptionController.text,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => Navigator.pop(context, false),
+                            icon: const Icon(Icons.edit_outlined),
+                            label: const Text('Go back and edit'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: () => Navigator.pop(context, true),
+                            icon: const Icon(Icons.send_rounded),
+                            label: const Text('Submit report'),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 12),
-                    _ReportReviewDetail(
-                      icon: Icons.report_problem_outlined,
-                      label: 'ISSUE TYPE',
-                      value: issueType!,
-                    ),
-                    const SizedBox(height: 10),
-                    _ReportReviewDetail(
-                      icon: Icons.priority_high_rounded,
-                      label: 'ACCESS IMPACT',
-                      value:
-                          '$impactLevel — ${CommunityReport.impactLevelDescriptions[impactLevel]}',
-                    ),
-                    const SizedBox(height: 10),
-                    _ReportReviewDetail(
-                      icon: Icons.location_on_outlined,
-                      label: 'ROUTE / STATION',
-                      value: locationController.text,
-                    ),
-                    const SizedBox(height: 10),
-                    _ReportReviewDetail(
-                      icon: Icons.notes_rounded,
-                      label: 'DESCRIPTION',
-                      value: descriptionController.text,
-                    ),
-                  ],
                 ),
-              ),
-              actions: [
-                TextButton.icon(
-                  onPressed: () => Navigator.pop(context, false),
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Edit report'),
-                ),
-                FilledButton.icon(
-                  onPressed: () => Navigator.pop(context, true),
-                  icon: const Icon(Icons.send_rounded),
-                  label: const Text('Submit report'),
-                ),
-              ],
-            ),
+              );
+            },
           ) ??
           false;
     } finally {
@@ -496,350 +526,414 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
 
   @override
   Widget build(BuildContext context) {
+    final interactionsEnabled =
+        !isDraftLoading && !isSubmitting && !isDiscardingDraft;
+
     return Scaffold(
       body: EqualRideBackground(
         child: SafeArea(
           child: Form(
             key: formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: ListView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.all(20),
+            child: Column(
               children: [
-                Row(
-                  children: [
-                    if (Navigator.canPop(context))
-                      IconButton(
-                        tooltip: 'Back',
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_rounded),
-                      ),
-                    Expanded(
-                      child: Text(
-                        'Report Accessibility Issue',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Help us make every journey more accessible by sharing what you found.',
-                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
-                ),
-                if (isDraftLoading) ...[
-                  const SizedBox(height: 16),
-                  const LinearProgressIndicator(),
-                ],
-                if (hasSavedDraft || isDraftSaving) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.teal.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppTheme.teal.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.drafts_outlined,
+                Expanded(
+                  child: ListView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
+                    children: [
+                      Row(
+                        children: [
+                          if (Navigator.canPop(context))
+                            IconButton(
+                              tooltip: 'Back',
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                            ),
+                          const SizedBox(width: 4),
+                          Container(
+                            height: 42,
+                            width: 42,
+                            decoration: BoxDecoration(
+                              color: AppTheme.teal.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.accessible_forward_rounded,
                               color: AppTheme.teal,
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                isDraftSaving
-                                    ? 'Saving report draft on this device...'
-                                    : 'Report draft saved on this device',
-                                style: const TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (hasSavedDraft) ...[
-                          const SizedBox(height: 8),
-                          const Text(
-                            'You can restore the saved version or discard it.',
-                            style: TextStyle(color: AppTheme.textSecondary),
                           ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: [
-                              OutlinedButton.icon(
-                                onPressed:
-                                    isDraftLoading ||
-                                        isSubmitting ||
-                                        isDraftSaving ||
-                                        isDiscardingDraft
-                                    ? null
-                                    : restoreSavedDraft,
-                                icon: const Icon(Icons.restore_rounded),
-                                label: const Text('Restore draft'),
-                              ),
-                              TextButton.icon(
-                                onPressed:
-                                    isDraftLoading ||
-                                        isSubmitting ||
-                                        isDiscardingDraft
-                                    ? null
-                                    : discardSavedDraft,
-                                icon: const Icon(Icons.delete_outline_rounded),
-                                label: const Text('Discard'),
-                              ),
-                            ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Accessibility report',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
                           ),
                         ],
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 28),
-                GlassPanel(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      DropdownButtonFormField<String>(
-                        initialValue: issueType,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Issue type',
-                          prefixIcon: Icon(Icons.report_problem_outlined),
-                        ),
-                        items: issueTypes
-                            .map(
-                              (type) => DropdownMenuItem(
-                                value: type,
-                                child: Text(
-                                  type,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged:
-                            isDraftLoading || isSubmitting || isDiscardingDraft
-                            ? null
-                            : (value) {
-                                setState(() => issueType = value);
-                                scheduleDraftSave();
-                              },
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Please select an issue type.'
-                            : null,
                       ),
                       const SizedBox(height: 18),
-                      ImpactLevelSelector(
-                        value: impactLevel,
-                        enabled:
-                            !isDraftLoading &&
-                            !isSubmitting &&
-                            !isDiscardingDraft,
-                        onChanged: (value) {
-                          setState(() => impactLevel = value);
-                          scheduleDraftSave();
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppTheme.teal.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: AppTheme.teal.withValues(alpha: 0.24),
-                          ),
-                        ),
+                      GlassPanel(
+                        padding: const EdgeInsets.all(20),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              height: 42,
-                              width: 42,
+                              height: 48,
+                              width: 48,
                               decoration: BoxDecoration(
-                                color: AppTheme.teal.withValues(alpha: 0.16),
-                                borderRadius: BorderRadius.circular(14),
+                                gradient: const LinearGradient(
+                                  colors: [AppTheme.teal, AppTheme.aqua],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                               child: const Icon(
-                                Icons.map_outlined,
-                                color: AppTheme.teal,
+                                Icons.campaign_rounded,
+                                color: AppTheme.navy,
+                                size: 25,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 14),
                             const Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Find the place on a map',
+                                    'Help make travel easier for everyone',
                                     style: TextStyle(
                                       color: AppTheme.textPrimary,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: 18,
+                                      height: 1.2,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
-                                  SizedBox(height: 3),
+                                  SizedBox(height: 7),
                                   Text(
-                                    'Tap the map to choose a point and add its coordinates.',
+                                    'Tell us what happened and where. Your report helps other travellers plan with confidence.',
                                     style: TextStyle(
                                       color: AppTheme.textSecondary,
-                                      fontSize: 12,
+                                      height: 1.45,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            IconButton.filledTonal(
-                              tooltip: 'Select location on map',
-                              onPressed:
+                          ],
+                        ),
+                      ),
+                      if (isDraftLoading) ...[
+                        const SizedBox(height: 16),
+                        const LinearProgressIndicator(
+                          minHeight: 3,
+                          borderRadius: BorderRadius.all(Radius.circular(4)),
+                        ),
+                      ],
+                      if (hasSavedDraft || isDraftSaving) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.teal.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppTheme.teal.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.drafts_outlined,
+                                    color: AppTheme.teal,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      isDraftSaving
+                                          ? 'Saving report draft on this device...'
+                                          : 'Report draft saved on this device',
+                                      style: const TextStyle(
+                                        color: AppTheme.textPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (hasSavedDraft) ...[
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'You can restore the saved version or discard it.',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      onPressed:
+                                          isDraftLoading ||
+                                              isSubmitting ||
+                                              isDraftSaving ||
+                                              isDiscardingDraft
+                                          ? null
+                                          : restoreSavedDraft,
+                                      icon: const Icon(Icons.restore_rounded),
+                                      label: const Text('Restore draft'),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed:
+                                          isDraftLoading ||
+                                              isSubmitting ||
+                                              isDiscardingDraft
+                                          ? null
+                                          : discardSavedDraft,
+                                      icon: const Icon(
+                                        Icons.delete_outline_rounded,
+                                      ),
+                                      label: const Text('Discard'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 28),
+                      GlassPanel(
+                        padding: const EdgeInsets.all(18),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const _FormSectionHeading(
+                              number: '01',
+                              title: 'What is the issue?',
+                              subtitle: 'Choose the closest match.',
+                              icon: Icons.report_problem_outlined,
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              initialValue: issueType,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Issue type',
+                                prefixIcon: Icon(Icons.report_problem_outlined),
+                              ),
+                              items: issueTypes
+                                  .map(
+                                    (type) => DropdownMenuItem(
+                                      value: type,
+                                      child: Text(
+                                        type,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged:
                                   isDraftLoading ||
                                       isSubmitting ||
-                                      isDiscardingDraft ||
-                                      isPickingLocation
+                                      isDiscardingDraft
                                   ? null
-                                  : selectLocationOnMap,
-                              style: IconButton.styleFrom(
-                                foregroundColor: AppTheme.navy,
-                                backgroundColor: AppTheme.teal,
+                                  : (value) {
+                                      setState(() => issueType = value);
+                                      scheduleDraftSave();
+                                    },
+                              validator: (value) =>
+                                  value == null || value.isEmpty
+                                  ? 'Please select an issue type.'
+                                  : null,
+                            ),
+                            const SizedBox(height: 18),
+                            const _FormSectionHeading(
+                              number: '02',
+                              title: 'How much does it affect access?',
+                              subtitle:
+                                  'This is separate from the report status.',
+                              icon: Icons.priority_high_rounded,
+                            ),
+                            const SizedBox(height: 12),
+                            ImpactLevelSelector(
+                              value: impactLevel,
+                              enabled: interactionsEnabled,
+                              onChanged: (value) {
+                                setState(() => impactLevel = value);
+                                scheduleDraftSave();
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            const _FormSectionHeading(
+                              number: '03',
+                              title: 'Where did it happen?',
+                              subtitle:
+                                  'Add a place name or pinpoint it on the map.',
+                              icon: Icons.place_outlined,
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed:
+                                  interactionsEnabled && !isPickingLocation
+                                  ? selectLocationOnMap
+                                  : null,
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(52),
+                                foregroundColor: AppTheme.aqua,
+                                side: BorderSide(
+                                  color: AppTheme.teal.withValues(alpha: 0.50),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
                               icon: isPickingLocation
                                   ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
+                                      height: 18,
+                                      width: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Icon(Icons.map_rounded),
+                                  : const Icon(Icons.map_outlined),
+                              label: Text(
+                                isPickingLocation
+                                    ? 'Opening map...'
+                                    : 'Choose location on map',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: locationController,
+                              enabled: interactionsEnabled,
+                              onChanged: (_) => scheduleDraftSave(),
+                              keyboardType: TextInputType.text,
+                              textInputAction: TextInputAction.done,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: InputDecoration(
+                                labelText: 'Place, stop, or station',
+                                hintText: selectedIssueGuidance.locationHint,
+                                prefixIcon: const Icon(
+                                  Icons.location_on_outlined,
+                                ),
+                                helperText:
+                                    'A landmark or entrance helps others find it.',
+                              ),
+                              validator: (value) =>
+                                  value == null || value.trim().isEmpty
+                                  ? 'Please enter the route or station location.'
+                                  : null,
+                            ),
+                            const SizedBox(height: 18),
+                            const _FormSectionHeading(
+                              number: '04',
+                              title: 'Tell us what happened',
+                              subtitle:
+                                  'A little detail can make a big difference.',
+                              icon: Icons.subject_rounded,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: descriptionController,
+                              enabled: interactionsEnabled,
+                              onChanged: (_) => scheduleDraftSave(),
+                              keyboardType: TextInputType.multiline,
+                              textInputAction: TextInputAction.newline,
+                              minLines: 4,
+                              maxLines: 7,
+                              textCapitalization: TextCapitalization.sentences,
+                              decoration: InputDecoration(
+                                labelText: 'Description',
+                                alignLabelWithHint: true,
+                                hintText: selectedIssueGuidance.descriptionHint,
+                                helperText:
+                                    selectedIssueGuidance.descriptionHelp,
+                                prefixIcon: const Padding(
+                                  padding: EdgeInsets.only(bottom: 48),
+                                  child: Icon(Icons.notes_rounded),
+                                ),
+                              ),
+                              buildCounter:
+                                  (
+                                    context, {
+                                    required currentLength,
+                                    required isFocused,
+                                    maxLength,
+                                  }) {
+                                    final countLabel =
+                                        currentLength < minimumDescriptionLength
+                                        ? '$currentLength / $minimumDescriptionLength minimum'
+                                        : '$currentLength characters';
+                                    return Text(
+                                      countLabel,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    );
+                                  },
+                              validator: (value) {
+                                final description = value?.trim() ?? '';
+                                if (description.isEmpty) {
+                                  return 'Please describe the accessibility issue.';
+                                }
+                                if (description.length <
+                                    minimumDescriptionLength) {
+                                  return 'Please add a little more detail (20 characters minimum).';
+                                }
+                                return null;
+                              },
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: descriptionController,
-                        enabled:
-                            !isDraftLoading &&
-                            !isSubmitting &&
-                            !isDiscardingDraft,
-                        onChanged: (_) => scheduleDraftSave(),
-                        keyboardType: TextInputType.multiline,
-                        textInputAction: TextInputAction.newline,
-                        minLines: 4,
-                        maxLines: 7,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration:
-                            const InputDecoration(
-                              labelText: 'Description',
-                              alignLabelWithHint: true,
-                              prefixIcon: Icon(Icons.notes_rounded),
-                            ).copyWith(
-                              hintText: selectedIssueGuidance.descriptionHint,
-                              helperText: selectedIssueGuidance.descriptionHelp,
-                            ),
-                        buildCounter:
-                            (
-                              context, {
-                              required currentLength,
-                              required isFocused,
-                              maxLength,
-                            }) {
-                              final countLabel =
-                                  currentLength < minimumDescriptionLength
-                                  ? '$currentLength / $minimumDescriptionLength minimum'
-                                  : '$currentLength characters';
-                              return Text(
-                                countLabel,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              );
-                            },
-                        validator: (value) {
-                          final description = value?.trim() ?? '';
-                          if (description.isEmpty) {
-                            return 'Please describe the accessibility issue.';
-                          }
-                          if (description.length < minimumDescriptionLength) {
-                            return 'Please add a little more detail (20 characters minimum).';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      TextFormField(
-                        controller: locationController,
-                        enabled:
-                            !isDraftLoading &&
-                            !isSubmitting &&
-                            !isDiscardingDraft,
-                        onChanged: (_) => scheduleDraftSave(),
-                        keyboardType: TextInputType.text,
-                        textInputAction: TextInputAction.done,
-                        textCapitalization: TextCapitalization.words,
-                        decoration:
-                            const InputDecoration(
-                              labelText: 'Route / station location',
-                              prefixIcon: Icon(Icons.location_on_outlined),
-                            ).copyWith(
-                              hintText: selectedIssueGuidance.locationHint,
-                              helperText:
-                                  'Required. Enter a place or choose map coordinates.',
-                            ),
-                        buildCounter:
-                            (
-                              context, {
-                              required currentLength,
-                              required isFocused,
-                              maxLength,
-                            }) {
-                              return Text(
-                                '$currentLength characters',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              );
-                            },
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
-                            ? 'Please enter the route or station location.'
-                            : null,
-                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 28),
-                FilledButton.icon(
-                  onPressed:
-                      isSubmitting ||
-                          isReviewing ||
-                          isDraftLoading ||
-                          isDiscardingDraft
-                      ? null
-                      : submitReport,
-                  icon: isSubmitting
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            color: AppTheme.navy,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : const Icon(Icons.send_rounded),
-                  label: Text(
-                    isDraftLoading
-                        ? 'Restoring draft...'
-                        : isReviewing
-                        ? 'Reviewing report...'
-                        : isSubmitting
-                        ? 'Checking report...'
-                        : 'Submit report',
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.navy.withValues(alpha: 0.94),
+                    border: Border(
+                      top: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
+                    ),
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed:
+                          isSubmitting ||
+                              isReviewing ||
+                              isDraftLoading ||
+                              isDiscardingDraft
+                          ? null
+                          : submitReport,
+                      icon: isSubmitting
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                color: AppTheme.navy,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : const Icon(Icons.send_rounded),
+                      label: Text(
+                        isDraftLoading
+                            ? 'Restoring draft...'
+                            : isReviewing
+                            ? 'Preparing review...'
+                            : isSubmitting
+                            ? 'Submitting report...'
+                            : 'Review and submit',
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -847,6 +941,69 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FormSectionHeading extends StatelessWidget {
+  const _FormSectionHeading({
+    required this.number,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  final String number;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          height: 40,
+          width: 40,
+          decoration: BoxDecoration(
+            color: AppTheme.teal.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Icon(icon, color: AppTheme.teal, size: 21),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          number,
+          style: TextStyle(
+            color: AppTheme.aqua.withValues(alpha: 0.75),
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 }
