@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 
+import 'accessibility_map_location_picker_page.dart';
 import '../services/accessibility_report_draft_service.dart';
 import '../services/accessibility_report_service.dart';
 import '../theme/app_theme.dart';
@@ -31,6 +33,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   bool isDraftLoading = true;
   bool isDraftSaving = false;
   bool isDiscardingDraft = false;
+  bool isPickingLocation = false;
   bool hasSavedDraft = false;
   bool hasShownDraftSaveError = false;
 
@@ -253,6 +256,47 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       );
     } finally {
       if (mounted) setState(() => isDiscardingDraft = false);
+    }
+  }
+
+  Future<void> selectLocationOnMap() async {
+    if (isPickingLocation ||
+        isSubmitting ||
+        isDraftLoading ||
+        isDiscardingDraft) {
+      return;
+    }
+
+    setState(() => isPickingLocation = true);
+    try {
+      final selectedPoint = await Navigator.of(context).push<LatLng>(
+        MaterialPageRoute(
+          builder: (_) => AccessibilityMapLocationPickerPage(
+            initialLocation: locationController.text,
+          ),
+        ),
+      );
+      if (!mounted || selectedPoint == null) return;
+
+      locationController.text = formatMapCoordinates(selectedPoint);
+      setState(() {});
+      scheduleDraftSave();
+      FocusScope.of(context).unfocus();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Map coordinates added to the location.')),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Unable to select report location on map: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open the map picker. Please enter a location manually.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isPickingLocation = false);
     }
   }
 
@@ -576,6 +620,80 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                             : null,
                       ),
                       const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppTheme.teal.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: AppTheme.teal.withValues(alpha: 0.24),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              height: 42,
+                              width: 42,
+                              decoration: BoxDecoration(
+                                color: AppTheme.teal.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.map_outlined,
+                                color: AppTheme.teal,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Find the place on a map',
+                                    style: TextStyle(
+                                      color: AppTheme.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  SizedBox(height: 3),
+                                  Text(
+                                    'Tap the map to choose a point and add its coordinates.',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
+                              tooltip: 'Select location on map',
+                              onPressed:
+                                  isDraftLoading ||
+                                      isSubmitting ||
+                                      isDiscardingDraft ||
+                                      isPickingLocation
+                                  ? null
+                                  : selectLocationOnMap,
+                              style: IconButton.styleFrom(
+                                foregroundColor: AppTheme.navy,
+                                backgroundColor: AppTheme.teal,
+                              ),
+                              icon: isPickingLocation
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.map_rounded),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: descriptionController,
                         enabled:
@@ -642,7 +760,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                             ).copyWith(
                               hintText: selectedIssueGuidance.locationHint,
                               helperText:
-                                  'Required. Enter the route, stop, or station.',
+                                  'Required. Enter a place or choose map coordinates.',
                             ),
                         buildCounter:
                             (
