@@ -51,6 +51,7 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
 
               setDialogState(() => isSaving = true);
 
+              var saved = false;
               try {
                 if (location == null) {
                   await _locationService.addLocation(
@@ -66,12 +67,9 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
                     address: address,
                   );
                 }
-
-                if (dialogContext.mounted) {
-                  Navigator.of(dialogContext).pop();
-                }
+                saved = true;
               } catch (_) {
-                if (this.context.mounted) {
+                if (mounted) {
                   ScaffoldMessenger.of(this.context).showSnackBar(
                     const SnackBar(
                       content: Text(
@@ -84,6 +82,10 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
                 if (dialogContext.mounted) {
                   setDialogState(() => isSaving = false);
                 }
+              }
+
+              if (saved && dialogContext.mounted) {
+                Navigator.of(dialogContext).pop();
               }
             }
 
