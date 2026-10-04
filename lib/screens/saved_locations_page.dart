@@ -5,6 +5,7 @@ import '../services/saved_location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
+import 'map_picker_page.dart';
 
 class SavedLocationsPage extends StatefulWidget {
   const SavedLocationsPage({
@@ -317,6 +318,15 @@ class _SavedLocationFormDialogState extends State<_SavedLocationFormDialog> {
     super.dispose();
   }
 
+  Future<void> _chooseOnMap() async {
+    final picked = await pickLocationOnMap(context);
+    if (!mounted || picked == null) return;
+
+    setState(() {
+      _addressController.text = picked.address;
+    });
+  }
+
   Future<void> _save() async {
     if (_isSaving) return;
 
@@ -326,7 +336,7 @@ class _SavedLocationFormDialogState extends State<_SavedLocationFormDialog> {
     if (name.isEmpty || address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Enter both a name and a destination.'),
+          content: Text('Enter a name and a place, or choose it on the map.'),
         ),
       );
       return;
@@ -375,11 +385,17 @@ class _SavedLocationFormDialogState extends State<_SavedLocationFormDialog> {
               enabled: !_isSaving,
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
-                labelText: 'Destination',
-                hintText: 'Example: Colombo Fort Railway Station',
+                labelText: 'Place',
+                hintText: 'Choose on the map or type a place',
                 prefixIcon: Icon(Icons.location_on_rounded),
               ),
               onSubmitted: (_) => _save(),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _isSaving ? null : _chooseOnMap,
+              icon: const Icon(Icons.map_rounded),
+              label: const Text('Choose on map'),
             ),
           ],
         ),
