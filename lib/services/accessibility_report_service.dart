@@ -193,13 +193,17 @@ class AccessibilityReportService {
   }
 
   /// Submits a community report from the report form.
+  ///
   /// [busNumber] is optional – only relevant for on-bus reports.
+  /// [category] is either 'bus' or 'road' and controls which issue types
+  /// are valid for this report.
   Future<void> submitCommunityReport({
     required String issueType,
     required String description,
     required String location,
     required String impactLevel,
     String? busNumber,
+    String category = 'bus',
   }) async {
     final authorId = FirebaseAuth.instance.currentUser?.uid;
 
@@ -217,9 +221,11 @@ class AccessibilityReportService {
         'impactLevel': impactLevel,
         if (busNumber != null && busNumber.trim().isNotEmpty)
           'busNumber': busNumber.trim(),
+        'category': category,
         'createdAt': FieldValue.serverTimestamp(),
         'authorId': authorId,
         'status': 'Pending',
+        'upvoteCount': 0,
       });
     } on FirebaseException catch (e) {
       throw AccessibilityReportException(
@@ -265,6 +271,58 @@ class AccessibilityReportService {
 
   /// Seeds the Firestore collection with realistic demo reports.
   /// Only used to populate sample data for demonstration purposes.
+  // ── Upvote ────────────────────────────────────────────────────────────────
+
+  /// Atomically increments the upvote counter on a report by 1.
+  ///
+  /// Uses [FieldValue.increment] so concurrent taps from different devices
+  /// never overwrite each other.
+  Future<void> upvoteReport({required String reportId}) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      throw const AccessibilityReportException(
+        'You must be signed in to mark a report as helpful.',
+      );
+    }
+    try {
+      await _collection
+          .doc(reportId)
+          .update({'upvoteCount': FieldValue.increment(1)});
+    } on FirebaseException catch (e) {
+      throw AccessibilityReportException(
+        _classifyFirebaseError(e) == ReportStreamErrorKind.permissionDenied
+            ? 'You don\'t have permission to upvote this report.'
+            : 'Could not register your vote. Please try again.',
+      );
+    }
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+
+  /// Permanently deletes a report.
+  ///
+  /// Only the original author should be able to call this; enforce that via
+  /// Firestore security rules as well as in the UI.
+  Future<void> deleteReport({required String reportId}) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      throw const AccessibilityReportException(
+        'You must be signed in to delete a report.',
+      );
+    }
+    try {
+      await _collection.doc(reportId).delete();
+    } on FirebaseException catch (e) {
+      throw AccessibilityReportException(
+        _classifyFirebaseError(e) == ReportStreamErrorKind.permissionDenied
+            ? 'You don\'t have permission to delete this report.'
+            : 'Could not delete the report. Please try again.',
+      );
+    }
+  }
+
+  // ── Seed ──────────────────────────────────────────────────────────────────
+
   Future<void> seedDemoReports() async {
     final authorId = FirebaseAuth.instance.currentUser?.uid ?? 'demo_user';
     final now = DateTime.now();

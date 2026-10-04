@@ -5,6 +5,7 @@ import '../services/saved_location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
+import 'map_picker_page.dart';
 
 class SavedLocationsPage extends StatefulWidget {
   const SavedLocationsPage({
@@ -25,127 +26,30 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
 
   Future<void> _showLocationDialog({
     SavedLocation? location,
-  }) async {
-    final nameController = TextEditingController(text: location?.name ?? '');
-    final addressController =
-        TextEditingController(text: location?.address ?? '');
-    var isSaving = false;
-
-    await showDialog<void>(
+  }) {
+    return showDialog<void>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> saveLocation() async {
-              final name = nameController.text.trim();
-              final address = addressController.text.trim();
-
-              if (name.isEmpty || address.isEmpty) {
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Enter both a name and a destination.'),
-                  ),
-                );
-                return;
-              }
-
-              setDialogState(() => isSaving = true);
-
-              try {
-                if (location == null) {
-                  await _locationService.addLocation(
-                    userId: widget.userId,
-                    name: name,
-                    address: address,
-                  );
-                } else {
-                  await _locationService.updateLocation(
-                    userId: widget.userId,
-                    location: location,
-                    name: name,
-                    address: address,
-                  );
-                }
-
-                if (dialogContext.mounted) {
-                  Navigator.of(dialogContext).pop();
-                }
-              } catch (_) {
-                if (this.context.mounted) {
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Could not save this location. Please try again.',
-                      ),
-                    ),
-                  );
-                }
-              } finally {
-                if (dialogContext.mounted) {
-                  setDialogState(() => isSaving = false);
-                }
-              }
-            }
-
-            return AlertDialog(
-              title: Text(location == null ? 'Save location' : 'Edit location'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      enabled: !isSaving,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Location name',
-                        hintText: 'Example: Home, Work, or Hospital',
-                        prefixIcon: Icon(Icons.bookmark_add_rounded),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: addressController,
-                      enabled: !isSaving,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Destination',
-                        hintText: 'Example: Colombo Fort Railway Station',
-                        prefixIcon: Icon(Icons.location_on_rounded),
-                      ),
-                      onSubmitted: (_) => saveLocation(),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed:
-                      isSaving ? null : () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: isSaving ? null : saveLocation,
-                  child: isSaving
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            color: AppTheme.navy,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(location == null ? 'Save' : 'Update'),
-                ),
-              ],
+      builder: (_) => _SavedLocationFormDialog(
+        location: location,
+        onSave: (name, address) async {
+          if (location == null) {
+            await _locationService.addLocation(
+              userId: widget.userId,
+              name: name,
+              address: address,
             );
-          },
-        );
-      },
-    );
+            return;
+          }
 
-    nameController.dispose();
-    addressController.dispose();
+          await _locationService.updateLocation(
+            userId: widget.userId,
+            location: location,
+            name: name,
+            address: address,
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _confirmDelete(SavedLocation location) async {
@@ -314,64 +218,207 @@ class _SavedLocationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassPanel(
       padding: EdgeInsets.zero,
-      child: ListTile(
-        contentPadding: const EdgeInsets.fromLTRB(18, 12, 8, 12),
-        leading: Container(
-          height: 46,
-          width: 46,
-          decoration: BoxDecoration(
-            color: AppTheme.teal.withOpacity(0.16),
-            borderRadius: BorderRadius.circular(14),
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          contentPadding: const EdgeInsets.fromLTRB(18, 12, 8, 12),
+          leading: Container(
+            height: 46,
+            width: 46,
+            decoration: BoxDecoration(
+              color: AppTheme.teal.withOpacity(0.16),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.bookmark_rounded,
+              color: AppTheme.teal,
+            ),
           ),
-          child: const Icon(
-            Icons.bookmark_rounded,
-            color: AppTheme.teal,
+          title: Text(
+            location.name,
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(location.address),
+          ),
+          onTap: onUse,
+          trailing: PopupMenuButton<String>(
+            tooltip: 'Location actions',
+            onSelected: (value) {
+              if (value == 'use') onUse();
+              if (value == 'edit') onEdit();
+              if (value == 'delete') onDelete();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'use',
+                child: ListTile(
+                  leading: Icon(Icons.search_rounded),
+                  title: Text('Use for route'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'edit',
+                child: ListTile(
+                  leading: Icon(Icons.edit_rounded),
+                  title: Text('Edit'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline_rounded),
+                  title: Text('Delete'),
+                ),
+              ),
+            ],
           ),
         ),
-        title: Text(
-          location.name,
-          style: const TextStyle(
-            color: AppTheme.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
+      ),
+    );
+  }
+}
+
+class _SavedLocationFormDialog extends StatefulWidget {
+  const _SavedLocationFormDialog({
+    required this.onSave,
+    this.location,
+  });
+
+  final SavedLocation? location;
+  final Future<void> Function(String name, String address) onSave;
+
+  @override
+  State<_SavedLocationFormDialog> createState() =>
+      _SavedLocationFormDialogState();
+}
+
+class _SavedLocationFormDialogState extends State<_SavedLocationFormDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _addressController;
+  var _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.location?.name ?? '');
+    _addressController = TextEditingController(
+      text: widget.location?.address ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _addressController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _chooseOnMap() async {
+    final picked = await pickLocationOnMap(context);
+    if (!mounted || picked == null) return;
+
+    setState(() {
+      _addressController.text = picked.address;
+    });
+  }
+
+  Future<void> _save() async {
+    if (_isSaving) return;
+
+    final name = _nameController.text.trim();
+    final address = _addressController.text.trim();
+
+    if (name.isEmpty || address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter a name and a place, or choose it on the map.'),
         ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(location.address),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      await widget.onSave(name, address);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save this location. Please try again.'),
         ),
-        onTap: onUse,
-        trailing: PopupMenuButton<String>(
-          tooltip: 'Location actions',
-          onSelected: (value) {
-            if (value == 'use') onUse();
-            if (value == 'edit') onEdit();
-            if (value == 'delete') onDelete();
-          },
-          itemBuilder: (_) => const [
-            PopupMenuItem(
-              value: 'use',
-              child: ListTile(
-                leading: Icon(Icons.search_rounded),
-                title: Text('Use for route'),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isNewLocation = widget.location == null;
+
+    return AlertDialog(
+      title: Text(isNewLocation ? 'Save location' : 'Edit location'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _nameController,
+              enabled: !_isSaving,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Location name',
+                hintText: 'Example: Home, Work, or Hospital',
+                prefixIcon: Icon(Icons.bookmark_add_rounded),
               ),
             ),
-            PopupMenuItem(
-              value: 'edit',
-              child: ListTile(
-                leading: Icon(Icons.edit_rounded),
-                title: Text('Edit'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _addressController,
+              enabled: !_isSaving,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Place',
+                hintText: 'Choose on the map or type a place',
+                prefixIcon: Icon(Icons.location_on_rounded),
               ),
+              onSubmitted: (_) => _save(),
             ),
-            PopupMenuItem(
-              value: 'delete',
-              child: ListTile(
-                leading: Icon(Icons.delete_outline_rounded),
-                title: Text('Delete'),
-              ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _isSaving ? null : _chooseOnMap,
+              icon: const Icon(Icons.map_rounded),
+              label: const Text('Choose on map'),
             ),
           ],
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _isSaving ? null : _save,
+          child: _isSaving
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    color: AppTheme.navy,
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(isNewLocation ? 'Save' : 'Update'),
+        ),
+      ],
     );
   }
 }

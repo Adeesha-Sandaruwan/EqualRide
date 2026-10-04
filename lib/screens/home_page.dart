@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
 import 'community_reports_page.dart';
+import 'map_picker_page.dart';
 import 'route_results_page.dart';
 import 'saved_locations_page.dart';
 
@@ -78,6 +79,15 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickOnMap(TextEditingController controller) async {
+    final picked = await pickLocationOnMap(context);
+    if (!mounted || picked == null) return;
+
+    setState(() {
+      controller.text = picked.address;
+    });
   }
 
   Future<void> _openSavedLocations() async {
@@ -159,6 +169,11 @@ class _HomePageState extends State<HomePage> {
                         labelText: t('from'),
                         hintText: 'Your current location',
                         prefixIcon: const Icon(Icons.my_location_rounded),
+                        suffixIcon: IconButton(
+                          tooltip: 'Choose on map',
+                          onPressed: () => _pickOnMap(fromController),
+                          icon: const Icon(Icons.map_rounded),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -169,6 +184,11 @@ class _HomePageState extends State<HomePage> {
                         labelText: t('to'),
                         hintText: t('destination'),
                         prefixIcon: const Icon(Icons.location_on_rounded),
+                        suffixIcon: IconButton(
+                          tooltip: 'Choose on map',
+                          onPressed: () => _pickOnMap(destinationController),
+                          icon: const Icon(Icons.map_rounded),
+                        ),
                       ),
                       onSubmitted: (_) => findRoute(),
                     ),
