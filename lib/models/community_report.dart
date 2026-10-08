@@ -2,6 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Represents a single accessibility report from the community.
 class CommunityReport {
+  static const defaultImpactLevel = 'Moderate';
+
+  static const impactLevelDescriptions = {
+    'Low': 'Causes minor difficulty but access remains possible.',
+    'Moderate': 'Causes significant difficulty or delays.',
+    'High': 'Severely limits independent access.',
+    'Critical': 'Blocks access completely or leaves no safe alternative.',
+  };
+
   const CommunityReport({
     required this.id,
     required this.issueType,
@@ -13,6 +22,7 @@ class CommunityReport {
     this.upvoteCount = 0,
     this.busNumber,
     this.category = 'bus',
+    this.impactLevel = defaultImpactLevel,
   });
 
   final String id;
@@ -33,6 +43,7 @@ class CommunityReport {
   final String category;
 
   // ── Firestore deserialization ────────────────────────────────────────────
+  final String impactLevel;
 
   /// Creates a [CommunityReport] from a Firestore document snapshot.
   factory CommunityReport.fromSnapshot(
@@ -51,6 +62,9 @@ class CommunityReport {
       upvoteCount: (data['upvoteCount'] as num?)?.toInt() ?? 0,
       busNumber: data['busNumber'] as String?,
       category: data['category'] as String? ?? 'bus',
+      impactLevel: impactLevelDescriptions.containsKey(data['impactLevel'])
+          ? data['impactLevel'] as String
+          : defaultImpactLevel,
     );
   }
 

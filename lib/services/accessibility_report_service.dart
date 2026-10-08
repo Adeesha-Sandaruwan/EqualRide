@@ -20,11 +20,13 @@ enum ReportStreamErrorKind { permissionDenied, missingIndex, network, unknown }
 
 ReportStreamErrorKind _classifyFirebaseError(FirebaseException e) {
   // PERMISSION_DENIED → security-rules block
-  if (e.code == 'permission-denied') return ReportStreamErrorKind.permissionDenied;
+  if (e.code == 'permission-denied')
+    return ReportStreamErrorKind.permissionDenied;
 
   // The missing-index error arrives as code 'failed-precondition' and its
   // message contains a console URL the user can click to create the index.
-  if (e.code == 'failed-precondition') return ReportStreamErrorKind.missingIndex;
+  if (e.code == 'failed-precondition')
+    return ReportStreamErrorKind.missingIndex;
 
   // Unavailable / deadline-exceeded → connectivity problems
   if (e.code == 'unavailable' || e.code == 'deadline-exceeded') {
@@ -199,6 +201,7 @@ class AccessibilityReportService {
     required String issueType,
     required String description,
     required String location,
+    required String impactLevel,
     String? busNumber,
     String category = 'bus',
   }) async {
@@ -215,6 +218,7 @@ class AccessibilityReportService {
         'issueType': issueType,
         'description': description,
         'location': location,
+        'impactLevel': impactLevel,
         if (busNumber != null && busNumber.trim().isNotEmpty)
           'busNumber': busNumber.trim(),
         'category': category,
@@ -236,6 +240,7 @@ class AccessibilityReportService {
     required String issueType,
     required String description,
     required String location,
+    required String impactLevel,
   }) async {
     final authorId = FirebaseAuth.instance.currentUser?.uid;
 
@@ -250,6 +255,7 @@ class AccessibilityReportService {
         'issueType': issueType,
         'description': description,
         'location': location,
+        'impactLevel': impactLevel,
         'createdAt': FieldValue.serverTimestamp(),
         'authorId': authorId,
         'status': 'Pending',
@@ -324,15 +330,19 @@ class AccessibilityReportService {
     final demoReports = [
       {
         'issueType': 'Ramp unavailable',
+        'impactLevel': 'Critical',
         'description':
             'The wheelchair ramp on Bus 138 is broken and cannot be deployed. The driver had to manually assist passengers. This has been an ongoing issue for the past week.',
         'location': 'Bus 138 - Colombo Fort to Kaduwela',
-        'createdAt': Timestamp.fromDate(now.subtract(const Duration(minutes: 10))),
+        'createdAt': Timestamp.fromDate(
+          now.subtract(const Duration(minutes: 10)),
+        ),
         'authorId': authorId,
         'status': 'Pending',
       },
       {
         'issueType': 'Lift unavailable',
+        'impactLevel': 'Critical',
         'description':
             'The main elevator at Maradana Railway Station is out of service. Wheelchair users have no way to access Platform 3 and 4. A sign says "Under maintenance" but no timeline is given.',
         'location': 'Maradana Railway Station',
@@ -342,6 +352,7 @@ class AccessibilityReportService {
       },
       {
         'issueType': 'Wheelchair access',
+        'impactLevel': 'High',
         'description':
             'The designated wheelchair space on the Colombo-Kandy intercity express was blocked with luggage. Staff did not assist in clearing the space.',
         'location': 'Colombo-Kandy Intercity Express',
@@ -351,6 +362,7 @@ class AccessibilityReportService {
       },
       {
         'issueType': 'Step-free access issue',
+        'impactLevel': 'Moderate',
         'description':
             'The step-free route from the main entrance to Platform 1 at Fort Station has a broken tactile paving section near the ticket counter.',
         'location': 'Colombo Fort Railway Station',
@@ -360,6 +372,7 @@ class AccessibilityReportService {
       },
       {
         'issueType': 'Crowding',
+        'impactLevel': 'High',
         'description':
             'Bus stop near University of Moratuwa is severely overcrowded during peak hours (7-8 AM). No accessible queuing system for mobility-impaired passengers.',
         'location': 'Bus Stop - University of Moratuwa',
@@ -369,6 +382,7 @@ class AccessibilityReportService {
       },
       {
         'issueType': 'Accessibility information incorrect',
+        'impactLevel': 'High',
         'description':
             'The EqualRide app shows Bambalapitiya Station as fully accessible, but the ramp from street level to the platform is too steep for most wheelchair users.',
         'location': 'Bambalapitiya Railway Station',
@@ -378,6 +392,7 @@ class AccessibilityReportService {
       },
       {
         'issueType': 'Ramp unavailable',
+        'impactLevel': 'Critical',
         'description':
             'Multiple buses on route 100 (Colombo-Galle) have non-functional ramps. Checked 3 buses today and none had working ramps.',
         'location': 'Bus Route 100 - Colombo to Galle',
