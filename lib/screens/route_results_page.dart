@@ -10,6 +10,7 @@ import '../models/route_recommendation.dart';
 import '../models/transport_route.dart';
 import '../services/accessibility_report_service.dart';
 import '../services/route_recommendation_service.dart';
+import '../services/voice_assistant_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -89,6 +90,94 @@ class _RouteResultsPageState extends State<RouteResultsPage> {
         // Fallback reports maintained
       },
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _registerVoiceContext();
+    });
+  }
+
+  void _registerVoiceContext() {
+    final lang = widget.preferences.language;
+    final routes = sortedRoutes;
+    VoiceAssistantService.instance.registerScreen(
+      VoiceScreenContext(
+        name: lang == AppLanguage.sinhala ? 'මාර්ග ප්‍රතිඵල' : 'Route Results',
+        summary: lang == AppLanguage.sinhala
+            ? '${widget.destination} දක්වා සුදුසු මාර්ග ${routes.length}ක් සොයා ගන්නා ලදී.'
+            : 'Found ${routes.length} accessible transit routes from ${widget.from} to ${widget.destination}.',
+        readContent: () => _buildRoutesVoiceSummary(routes),
+        onVoiceCommand: (cmd) => _handleVoiceCommand(cmd, routes),
+      ),
+      announceNow: true,
+    );
+  }
+
+  String _buildRoutesVoiceSummary(List<TransportRoute> routes) {
+    if (routes.isEmpty) {
+      return widget.preferences.language == AppLanguage.sinhala
+          ? 'කිසිදු මාර්ගයක් හමු නොවීය.'
+          : 'No routes found matching your criteria.';
+    }
+
+    final buffer = StringBuffer();
+    final isSinhala = widget.preferences.language == AppLanguage.sinhala;
+    final topRoutes = routes.take(3).toList();
+
+    if (isSinhala) {
+      buffer.write('මාර්ග ${routes.length}කින් ප්‍රධාන මාර්ග: ');
+      for (var i = 0; i < topRoutes.length; i++) {
+        final r = topRoutes[i];
+        buffer.write('අංක ${i + 1}: ${r.transportType} ${r.routeNumber}, විනාඩි ${r.durationMinutes}, ලකුණු ${r.accessibilityScore}. ');
+      }
+      buffer.write('විස්තර බැලීමට "පළමු මාර්ගය තෝරන්න" යැයි පවසන්න.');
+    } else {
+      buffer.write('Found ${routes.length} routes. Top options: ');
+      for (var i = 0; i < topRoutes.length; i++) {
+        final r = topRoutes[i];
+        buffer.write('Option ${i + 1}: ${r.transportType} ${r.routeNumber}, takes ${r.durationMinutes} minutes. ${r.isStepFree ? "Step-free." : "Not step-free."} Score ${r.accessibilityScore}. ');
+      }
+      buffer.write('Say "Select first route" or "Select option 1" to view detailed stops.');
+    }
+
+    return buffer.toString();
+  }
+
+  Future<bool> _handleVoiceCommand(String cmd, List<TransportRoute> routes) async {
+    if (routes.isEmpty) return false;
+
+    if (cmd.contains('first route') ||
+        cmd.contains('option 1') ||
+        cmd.contains('route 1') ||
+        cmd.contains('fastest route') ||
+        cmd.contains('පළමු මාර්ගය')) {
+      _openRouteDetailsForRoute(context, routes.first);
+      return true;
+    }
+
+    if ((cmd.contains('second route') ||
+            cmd.contains('option 2') ||
+            cmd.contains('route 2') ||
+            cmd.contains('දෙවන මාර්ගය')) &&
+        routes.length > 1) {
+      _openRouteDetailsForRoute(context, routes[1]);
+      return true;
+    }
+
+    if ((cmd.contains('third route') ||
+            cmd.contains('option 3') ||
+            cmd.contains('route 3') ||
+            cmd.contains('තෙවන මාර්ගය')) &&
+        routes.length > 2) {
+      _openRouteDetailsForRoute(context, routes[2]);
+      return true;
+    }
+
+    if (cmd.contains('read routes') || cmd.contains('read options')) {
+      await VoiceAssistantService.instance.speak(_buildRoutesVoiceSummary(routes));
+      return true;
+    }
+
+    return false;
   }
 
   @override

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/community_report.dart';
 import '../models/route_details.dart';
+import '../services/voice_assistant_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import 'accessibility_report_page.dart';
@@ -15,8 +16,56 @@ class RouteDetailsPage extends StatelessWidget {
 
   final RouteDetails routeDetails;
 
+  String _buildDetailsVoiceSummary() {
+    final buffer = StringBuffer();
+    buffer.write(
+      'Route Details for ${routeDetails.routeTitle}. From ${routeDetails.startLocation} to ${routeDetails.destination}. Total duration ${routeDetails.durationMinutes} minutes with ${routeDetails.journeySteps.length} transit steps. ',
+    );
+    for (var i = 0; i < routeDetails.journeySteps.length; i++) {
+      final s = routeDetails.journeySteps[i];
+      buffer.write('Step ${i + 1}: ${s.title}, ${s.subtitle}. ');
+    }
+    buffer.write('Say "Start journey" to begin real-time navigation.');
+    return buffer.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      VoiceAssistantService.instance.registerScreen(
+        VoiceScreenContext(
+          name: 'Route Details',
+          summary:
+              'Route ${routeDetails.routeTitle} to ${routeDetails.destination}. Total duration is ${routeDetails.durationMinutes} minutes with ${routeDetails.journeySteps.length} steps.',
+          readContent: _buildDetailsVoiceSummary,
+          onVoiceCommand: (cmd) async {
+            if (cmd.contains('start journey') ||
+                cmd.contains('live companion') ||
+                cmd.contains('start navigation')) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      LiveJourneyCompanionPage(routeDetails: routeDetails),
+                ),
+              );
+              return true;
+            }
+            if (cmd.contains('map') || cmd.contains('view in map')) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      InAppRouteMapPage(routeDetails: routeDetails),
+                ),
+              );
+              return true;
+            }
+            return false;
+          },
+        ),
+        announceNow: true,
+      );
+    });
+
     return Scaffold(
       body: EqualRideBackground(
         child: SafeArea(

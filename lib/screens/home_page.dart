@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
 import '../models/accessibility_preferences.dart';
+import '../services/voice_assistant_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -37,6 +39,7 @@ class _HomePageState extends State<HomePage> {
   final destinationController = TextEditingController();
   final fromFocusNode = FocusNode();
   final destinationFocusNode = FocusNode();
+  StreamSubscription<String>? _voiceDestinationSub;
 
   @override
   void initState() {
@@ -45,6 +48,73 @@ class _HomePageState extends State<HomePage> {
         AppStrings.text(widget.preferences.language, 'currentLocation');
 
     fromFocusNode.addListener(_onFromFocusChange);
+
+    _voiceDestinationSub = VoiceAssistantService.instance
+        .onVoiceDestinationRequested
+        .listen((dest) {
+      if (mounted) {
+        destinationController.text = dest;
+        setState(() {});
+        findRoute();
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _registerVoiceContext();
+    });
+  }
+
+  void _registerVoiceContext() {
+    final lang = widget.preferences.language;
+    final name = widget.email.split('@').first;
+    VoiceAssistantService.instance.registerScreen(
+      VoiceScreenContext(
+        name: lang == AppLanguage.sinhala ? 'ප්‍රධාන පිටුව' : 'Home',
+        summary: lang == AppLanguage.sinhala
+            ? 'සාදරයෙන් පිළිගනිමු $name. ගමනාන්තය පවසා මාර්ග සෙවිය හැක.'
+            : 'Welcome $name. You can search accessible routes or manage travel preferences.',
+        readContent: () {
+          final from = fromController.text.trim();
+          final to = destinationController.text.trim();
+          if (lang == AppLanguage.sinhala) {
+            return 'EqualRide ප්‍රධාන පිටුව. ආරම්භක ස්ථානය: $from. ගමනාන්තය: ${to.isEmpty ? "ඇතුළත් කර නැත" : to}. "කොළඹට මාර්ග සොයන්න" වැනි විධානයක් පැවසිය හැක.';
+          } else {
+            return 'EqualRide Home screen. Starting point: $from. Destination: ${to.isEmpty ? "not specified" : to}. You can say a destination like "Find route to Pettah" to search.';
+          }
+        },
+        onVoiceCommand: (cmd) async {
+          if (cmd.contains('find route') ||
+              cmd.contains('search route') ||
+              cmd.contains('මාර්ග සොයන්න')) {
+            findRoute();
+            return true;
+          }
+          if (cmd.contains('saved location') || cmd.contains('සුරකින ලද')) {
+            _openSavedLocations();
+            return true;
+          }
+          if (cmd.contains('preference') ||
+              cmd.contains('setting') ||
+              cmd.contains('මනාප')) {
+            widget.onEditPreferences();
+            return true;
+          }
+          if (cmd.contains('report issue') || cmd.contains('ගැටලුවක් වාර්තා')) {
+            widget.onReportAccessibilityIssue();
+            return true;
+          }
+          if (cmd.contains('community') || cmd.contains('ප්‍රජා')) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CommunityReportsPage(),
+              ),
+            );
+            return true;
+          }
+          return false;
+        },
+      ),
+    );
   }
 
   void _onFromFocusChange() {
@@ -116,11 +186,13 @@ class _HomePageState extends State<HomePage> {
         fromController.text =
             AppStrings.text(widget.preferences.language, 'currentLocation');
       }
+      _registerVoiceContext();
     }
   }
 
   @override
   void dispose() {
+    _voiceDestinationSub?.cancel();
     fromFocusNode.removeListener(_onFromFocusChange);
     fromFocusNode.dispose();
     destinationFocusNode.dispose();

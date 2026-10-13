@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../models/route_details.dart';
 import '../services/live_location_service.dart';
+import '../services/voice_assistant_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -70,6 +71,61 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage>
     );
 
     _startLiveTransitTimer();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _registerVoiceContext();
+    });
+  }
+
+  void _registerVoiceContext() {
+    VoiceAssistantService.instance.registerScreen(
+      VoiceScreenContext(
+        name: 'Live Journey Companion',
+        summary:
+            'In-transit navigation on ${widget.routeDetails.routeTitle} towards ${widget.routeDetails.destination}.',
+        readContent: _buildCompanionVoiceSummary,
+        onVoiceCommand: (cmd) async {
+          if (cmd.contains('next stop') ||
+              cmd.contains('how far') ||
+              cmd.contains('current step') ||
+              cmd.contains('where am i')) {
+            await VoiceAssistantService.instance
+                .speak(_buildCompanionVoiceSummary());
+            return true;
+          }
+          if (cmd.contains('next step') || cmd.contains('step forward')) {
+            if (currentStepIndex < widget.routeDetails.journeySteps.length - 1) {
+              setState(() => currentStepIndex++);
+              await VoiceAssistantService.instance.speak(
+                'Advanced to step ${currentStepIndex + 1}: ${widget.routeDetails.journeySteps[currentStepIndex].title}',
+              );
+              return true;
+            }
+          }
+          if (cmd.contains('previous step') || cmd.contains('step back')) {
+            if (currentStepIndex > 0) {
+              setState(() => currentStepIndex--);
+              await VoiceAssistantService.instance.speak(
+                'Moved back to step ${currentStepIndex + 1}: ${widget.routeDetails.journeySteps[currentStepIndex].title}',
+              );
+              return true;
+            }
+          }
+          return false;
+        },
+      ),
+      announceNow: true,
+    );
+  }
+
+  String _buildCompanionVoiceSummary() {
+    if (widget.routeDetails.journeySteps.isEmpty) {
+      return 'Live journey companion for ${widget.routeDetails.routeTitle}. In transit to ${widget.routeDetails.destination}.';
+    }
+    final step = widget.routeDetails.journeySteps[currentStepIndex.clamp(0, widget.routeDetails.journeySteps.length - 1)];
+    final distance = _distanceToCurrentStepMeters.round();
+    final totalSteps = widget.routeDetails.journeySteps.length;
+    return 'Live journey companion. You are at step ${currentStepIndex + 1} of $totalSteps: ${step.title}, ${step.subtitle}. Distance to next checkpoint is approximately $distance meters. Current speed is ${_transitSpeedKmh.round()} kilometers per hour.';
   }
 
   @override

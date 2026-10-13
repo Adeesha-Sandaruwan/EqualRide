@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/community_report.dart';
 import '../services/accessibility_report_service.dart';
+import '../services/voice_assistant_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -151,6 +152,21 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
       curve: Curves.easeOutCubic,
     ));
     _headerAnimCtrl.forward();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        VoiceAssistantService.instance.registerScreen(
+          VoiceScreenContext(
+            name: 'Community Reports',
+            summary:
+                'Crowdsourced accessibility updates and transit conditions from fellow commuters.',
+            readContent: () =>
+                'Community Reports page. Filter by Pending, In Progress, or Resolved reports, or tap report to view details.',
+          ),
+          announceNow: true,
+        );
+      }
+    });
   }
 
   @override
