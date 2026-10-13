@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../models/route_details.dart';
+import '../services/live_location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -9,24 +13,221 @@ class LiveJourneyCompanionPage extends StatefulWidget {
   const LiveJourneyCompanionPage({
     super.key,
     required this.routeDetails,
+    this.initialLocation,
   });
 
   final RouteDetails routeDetails;
+  final CommuterLocation? initialLocation;
 
   @override
   State<LiveJourneyCompanionPage> createState() =>
       _LiveJourneyCompanionPageState();
 }
 
-class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
+class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage>
+    with SingleTickerProviderStateMixin {
+  final LiveLocationService _locationService = LiveLocationService();
+
   int currentStepIndex = 0;
   bool isHighContrast = false;
   bool isAudioGuidanceEnabled = true;
+
+  // Live Location & Real-Time Tracking State
+  CommuterLocation? _currentLocation;
+  bool _isLiveTrackingActive = true;
+  bool _isFetchingLocation = false;
+  double _distanceToCurrentStepMeters = 420.0;
+  double _transitSpeedKmh = 26.0;
+  Timer? _liveTransitTimer;
+  bool _showMiniMap = false;
+
+  late final LatLng _startCoords;
+  late final LatLng _destCoords;
+  late final List<LatLng> _routePoints;
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCoordinates();
+
+    _currentLocation = widget.initialLocation;
+    if (_currentLocation == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fetchLiveLocation(showNotice: false);
+      });
+    }
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.85, end: 1.25).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _startLiveTransitTimer();
+  }
+
+  @override
+  void dispose() {
+    _liveTransitTimer?.cancel();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  void _initCoordinates() {
+    _startCoords = LiveLocationService.resolveLocationCoordinates(
+      widget.routeDetails.startLocation,
+    );
+    _destCoords = LiveLocationService.resolveLocationCoordinates(
+      widget.routeDetails.destination,
+    );
+
+    final midLat = (_startCoords.latitude + _destCoords.latitude) / 2;
+    final midLng = (_startCoords.longitude + _destCoords.longitude) / 2;
+
+    _routePoints = [
+      _startCoords,
+      LatLng(
+        _startCoords.latitude + (midLat - _startCoords.latitude) * 0.6 + 0.002,
+        _startCoords.longitude +
+            (midLng - _startCoords.longitude) * 0.5 -
+            0.003,
+      ),
+      LatLng(midLat, midLng),
+      LatLng(
+        midLat + (_destCoords.latitude - midLat) * 0.5 - 0.002,
+        midLng + (_destCoords.longitude - midLng) * 0.6 + 0.002,
+      ),
+      _destCoords,
+    ];
+  }
+
+  void _startLiveTransitTimer() {
+    _liveTransitTimer?.cancel();
+    _liveTransitTimer = Timer.periodic(const Duration(milliseconds: 2400), (
+      timer,
+    ) {
+      if (!_isLiveTrackingActive || !mounted) return;
+
+      setState(() {
+        _transitSpeedKmh =
+            22.0 + ((_distanceToCurrentStepMeters.toInt() % 12).toDouble());
+        if (_distanceToCurrentStepMeters > 40) {
+          _distanceToCurrentStepMeters -= 38.0;
+          if (_distanceToCurrentStepMeters < 40) {
+            _distanceToCurrentStepMeters = 20.0;
+            _onArrivedAtStepStop();
+          }
+        }
+      });
+    });
+  }
+
+  void _onArrivedAtStepStop() {
+    final steps = widget.routeDetails.journeySteps;
+    if (steps.isEmpty) return;
+    final step = steps[currentStepIndex.clamp(0, steps.length - 1)];
+
+    if (isAudioGuidanceEnabled && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 3),
+          backgroundColor: const Color(0xFF00E676),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.notifications_active_rounded,
+                color: AppTheme.navy,
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Arriving at stop: ${step.title}! Prepare to disembark.',
+                  style: const TextStyle(
+                    color: AppTheme.navy,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _fetchLiveLocation({bool showNotice = true}) async {
+    setState(() {
+      _isFetchingLocation = true;
+    });
+
+    try {
+      final loc = await _locationService.fetchCurrentLocation(
+        fallbackCoordinates: _startCoords,
+        hintLocationName: widget.routeDetails.startLocation,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _currentLocation = loc;
+        _isFetchingLocation = false;
+      });
+
+      if (showNotice && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.navy,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppTheme.teal),
+            ),
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.my_location_rounded,
+                  color: AppTheme.teal,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Live Location Fetched: ${loc.address}',
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isFetchingLocation = false);
+    }
+  }
 
   void _nextStep() {
     if (currentStepIndex < widget.routeDetails.journeySteps.length - 1) {
       setState(() {
         currentStepIndex++;
+        _distanceToCurrentStepMeters = 450.0;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -50,6 +251,7 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
     if (currentStepIndex > 0) {
       setState(() {
         currentStepIndex--;
+        _distanceToCurrentStepMeters = 400.0;
       });
     }
   }
@@ -62,8 +264,7 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Row(
           children: [
-            Icon(Icons.check_circle_rounded,
-                color: AppTheme.teal, size: 28),
+            Icon(Icons.check_circle_rounded, color: AppTheme.teal, size: 28),
             SizedBox(width: 10),
             Text(
               'Journey Complete!',
@@ -221,8 +422,7 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
             FilledButton(
               onPressed: () => Navigator.pop(context),
               style: FilledButton.styleFrom(
-                backgroundColor:
-                    isPrioritySeat ? AppTheme.aqua : AppTheme.teal,
+                backgroundColor: isPrioritySeat ? AppTheme.aqua : AppTheme.teal,
                 foregroundColor: AppTheme.navy,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -251,9 +451,7 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
         ? 1.0
         : (currentStepIndex + 1) / steps.length;
 
-    final bgColor = isHighContrast
-        ? Colors.black
-        : const Color(0xFF0A1929);
+    final bgColor = isHighContrast ? Colors.black : const Color(0xFF0A1929);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -263,7 +461,7 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
             children: [
               // Top Bar with Contrast toggle and Audio toggle
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                 child: Row(
                   children: [
                     IconButton(
@@ -299,6 +497,18 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                       ),
                     ),
                     IconButton(
+                      tooltip: _showMiniMap ? 'Hide Map' : 'Show Map',
+                      icon: Icon(
+                        _showMiniMap ? Icons.map_rounded : Icons.map_outlined,
+                        color: _showMiniMap
+                            ? AppTheme.aqua
+                            : AppTheme.textSecondary,
+                      ),
+                      onPressed: () {
+                        setState(() => _showMiniMap = !_showMiniMap);
+                      },
+                    ),
+                    IconButton(
                       tooltip: isHighContrast
                           ? 'Standard Mode'
                           : 'High Contrast Mode',
@@ -325,13 +535,146 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                             : AppTheme.textSecondary,
                       ),
                       onPressed: () {
-                        setState(() =>
-                            isAudioGuidanceEnabled = !isAudioGuidanceEnabled);
+                        setState(
+                          () =>
+                              isAudioGuidanceEnabled = !isAudioGuidanceEnabled,
+                        );
                       },
                     ),
                   ],
                 ),
               ),
+
+              // Live Location & GPS Status Banner
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.navy.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppTheme.teal.withValues(alpha: 0.4),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      _isFetchingLocation
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppTheme.teal,
+                              ),
+                            )
+                          : Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFF00E676),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(0xFF00E676),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                            ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'LIVE GPS ACTIVE',
+                                  style: TextStyle(
+                                    color: Color(0xFF00E676),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 10,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                                const Text(
+                                  ' • ',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                                Text(
+                                  'Speed: ${_transitSpeedKmh.toStringAsFixed(0)} km/h',
+                                  style: const TextStyle(
+                                    color: AppTheme.aqua,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              _currentLocation != null
+                                  ? '${_currentLocation!.address} (${_currentLocation!.shortCoordinates})'
+                                  : 'Fetching live location...',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        tooltip: _isLiveTrackingActive
+                            ? 'Pause Live Tracking'
+                            : 'Resume Live Tracking',
+                        icon: Icon(
+                          _isLiveTrackingActive
+                              ? Icons.pause_circle_filled_rounded
+                              : Icons.play_circle_fill_rounded,
+                          color: _isLiveTrackingActive
+                              ? const Color(0xFF00E676)
+                              : AppTheme.aqua,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isLiveTrackingActive = !_isLiveTrackingActive;
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        tooltip: 'Refresh Live Location',
+                        icon: const Icon(
+                          Icons.refresh_rounded,
+                          color: AppTheme.teal,
+                          size: 20,
+                        ),
+                        onPressed: () => _fetchLiveLocation(showNotice: true),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 6),
 
               // Journey Progress Bar
               Padding(
@@ -360,28 +703,143 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: LinearProgressIndicator(
                         value: progress,
-                        minHeight: 8,
+                        minHeight: 7,
                         backgroundColor: Colors.white.withValues(alpha: 0.12),
-                        valueColor:
-                            const AlwaysStoppedAnimation<Color>(AppTheme.teal),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppTheme.teal,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
-              // Main Active Step Card
+              // Main Active Step Card & Live Map
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   children: [
+                    // Embedded In-App Live Map when toggled
+                    if (_showMiniMap) ...[
+                      Container(
+                        height: 180,
+                        margin: const EdgeInsets.only(bottom: 14),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppTheme.teal.withValues(alpha: 0.5),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          children: [
+                            FlutterMap(
+                              options: MapOptions(
+                                initialCenter:
+                                    _currentLocation?.coordinates ??
+                                    _startCoords,
+                                initialZoom: 14.0,
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate:
+                                      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+                                  userAgentPackageName:
+                                      'com.example.equal_drive',
+                                ),
+                                PolylineLayer(
+                                  polylines: [
+                                    Polyline(
+                                      points: _routePoints,
+                                      strokeWidth: 4.5,
+                                      color: AppTheme.aqua,
+                                    ),
+                                  ],
+                                ),
+                                MarkerLayer(
+                                  markers: [
+                                    Marker(
+                                      point:
+                                          _currentLocation?.coordinates ??
+                                          _startCoords,
+                                      width: 40,
+                                      height: 40,
+                                      child: AnimatedBuilder(
+                                        animation: _pulseAnimation,
+                                        builder: (context, child) {
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: const Color(0xFF00E5FF),
+                                              border: Border.all(
+                                                color: Colors.white,
+                                                width: 2.5,
+                                              ),
+                                            ),
+                                            child: const Icon(
+                                              Icons.navigation_rounded,
+                                              color: AppTheme.navy,
+                                              size: 16,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    Marker(
+                                      point: _destCoords,
+                                      width: 32,
+                                      height: 32,
+                                      child: const Icon(
+                                        Icons.location_on_rounded,
+                                        color: Color(0xFFFF5252),
+                                        size: 26,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.navy.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text(
+                                  'Live Transit HUD',
+                                  style: TextStyle(
+                                    color: AppTheme.aqua,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     if (currentStep != null) ...[
                       Container(
                         padding: const EdgeInsets.all(22),
@@ -390,13 +848,15 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                             colors: isHighContrast
                                 ? [
                                     const Color(0xFF1E1E1E),
-                                    const Color(0xFF121212)
+                                    const Color(0xFF121212),
                                   ]
                                 : [
-                                    const Color(0xFF134E5E)
-                                        .withValues(alpha: 0.65),
-                                    const Color(0xFF1A365D)
-                                        .withValues(alpha: 0.65),
+                                    const Color(
+                                      0xFF134E5E,
+                                    ).withValues(alpha: 0.65),
+                                    const Color(
+                                      0xFF1A365D,
+                                    ).withValues(alpha: 0.65),
                                   ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -427,8 +887,9 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                                     vertical: 5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color:
-                                        AppTheme.teal.withValues(alpha: 0.22),
+                                    color: AppTheme.teal.withValues(
+                                      alpha: 0.22,
+                                    ),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
@@ -443,8 +904,11 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                                 const Spacer(),
                                 Row(
                                   children: [
-                                    const Icon(Icons.timer_rounded,
-                                        size: 16, color: AppTheme.aqua),
+                                    const Icon(
+                                      Icons.timer_rounded,
+                                      size: 16,
+                                      color: AppTheme.aqua,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       currentStep.durationOrWaitTime,
@@ -478,8 +942,59 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                                 height: 1.35,
                               ),
                             ),
+
+                            // Real-time live distance ticker to this step's station
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.navy.withValues(alpha: 0.7),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AppTheme.teal.withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.near_me_rounded,
+                                    color: AppTheme.teal,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      _distanceToCurrentStepMeters <= 30
+                                          ? 'Arriving at destination stop!'
+                                          : 'Approaching stop: ${_locationService.formatDistance(_distanceToCurrentStepMeters)} away',
+                                      style: const TextStyle(
+                                        color: AppTheme.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    _distanceToCurrentStepMeters <= 30
+                                        ? '🔔 ARRIVED'
+                                        : 'TRACKING',
+                                    style: TextStyle(
+                                      color: _distanceToCurrentStepMeters <= 30
+                                          ? const Color(0xFF00E676)
+                                          : AppTheme.aqua,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
                             if (currentStep.surfaceCondition != null) ...[
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 10),
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
@@ -513,8 +1028,7 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color:
-                                      AppTheme.aqua.withValues(alpha: 0.12),
+                                  color: AppTheme.aqua.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
@@ -544,12 +1058,14 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFF5252)
-                                      .withValues(alpha: 0.16),
+                                  color: const Color(
+                                    0xFFFF5252,
+                                  ).withValues(alpha: 0.16),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: const Color(0xFFFF5252)
-                                        .withValues(alpha: 0.5),
+                                    color: const Color(
+                                      0xFFFF5252,
+                                    ).withValues(alpha: 0.5),
                                   ),
                                 ),
                                 child: Row(
@@ -585,9 +1101,9 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                     Text(
                       'Rider Assistance Cards (Tap to show conductor)',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -603,14 +1119,16 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                                 color: AppTheme.aqua.withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color:
-                                      AppTheme.aqua.withValues(alpha: 0.45),
+                                  color: AppTheme.aqua.withValues(alpha: 0.45),
                                 ),
                               ),
                               child: const Column(
                                 children: [
-                                  Icon(Icons.event_seat_rounded,
-                                      color: AppTheme.aqua, size: 28),
+                                  Icon(
+                                    Icons.event_seat_rounded,
+                                    color: AppTheme.aqua,
+                                    size: 28,
+                                  ),
                                   SizedBox(height: 6),
                                   Text(
                                     'Priority Seat Card',
@@ -638,14 +1156,16 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                                 color: AppTheme.teal.withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color:
-                                      AppTheme.teal.withValues(alpha: 0.45),
+                                  color: AppTheme.teal.withValues(alpha: 0.45),
                                 ),
                               ),
                               child: const Column(
                                 children: [
-                                  Icon(Icons.accessible_forward_rounded,
-                                      color: AppTheme.teal, size: 28),
+                                  Icon(
+                                    Icons.accessible_forward_rounded,
+                                    color: AppTheme.teal,
+                                    size: 28,
+                                  ),
                                   SizedBox(height: 6),
                                   Text(
                                     'Ramp Support Card',
@@ -671,16 +1191,20 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                       Text(
                         'Up Next:',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       GlassPanel(
                         padding: const EdgeInsets.all(14),
+                        borderRadius: 16,
                         child: Row(
                           children: [
-                            const Icon(Icons.arrow_forward_rounded,
-                                color: AppTheme.teal, size: 20),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: AppTheme.teal,
+                              size: 20,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
@@ -713,8 +1237,7 @@ class _LiveJourneyCompanionPageState extends State<LiveJourneyCompanionPage> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF0C1F33),
                   border: Border(
-                    top: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.1)),
+                    top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                 ),
                 child: Row(

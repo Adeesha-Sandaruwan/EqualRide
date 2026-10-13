@@ -1,20 +1,17 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../models/community_report.dart';
 import '../models/route_details.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import 'accessibility_report_page.dart';
+import 'in_app_route_map_page.dart';
 import 'live_journey_companion_page.dart';
 
 class RouteDetailsPage extends StatelessWidget {
-  const RouteDetailsPage({
-    super.key,
-    required this.routeDetails,
-  });
+  const RouteDetailsPage({super.key, required this.routeDetails});
 
   final RouteDetails routeDetails;
 
@@ -30,9 +27,7 @@ class RouteDetailsPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 12, 20, 16),
                 child: Row(
                   children: [
-                    _HoverBackButton(
-                      onPressed: () => Navigator.pop(context),
-                    ),
+                    _HoverBackButton(onPressed: () => Navigator.pop(context)),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -74,9 +69,7 @@ class RouteDetailsPage extends StatelessWidget {
                     const SizedBox(height: 18),
 
                     // Accessibility Score Panel with Granular Breakdown
-                    _AccessibilityScorePanel(
-                      routeDetails: routeDetails,
-                    ),
+                    _AccessibilityScorePanel(routeDetails: routeDetails),
 
                     const SizedBox(height: 24),
 
@@ -141,8 +134,9 @@ class RouteDetailsPage extends StatelessWidget {
                               child: Center(
                                 child: Text(
                                   'No step details available for this route.',
-                                  style:
-                                      TextStyle(color: AppTheme.textSecondary),
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary,
+                                  ),
                                 ),
                               ),
                             )
@@ -152,7 +146,8 @@ class RouteDetailsPage extends StatelessWidget {
                               itemCount: routeDetails.journeySteps.length,
                               itemBuilder: (context, index) {
                                 final step = routeDetails.journeySteps[index];
-                                final isLast = index ==
+                                final isLast =
+                                    index ==
                                     routeDetails.journeySteps.length - 1;
 
                                 return _JourneyTimelineItem(
@@ -245,9 +240,7 @@ class _HoverBackButtonState extends State<_HoverBackButton> {
 
 /// Interactive Glass Container with smooth hover lift and glowing border
 class _HoverGlassCard extends StatefulWidget {
-  const _HoverGlassCard({
-    required this.child,
-  });
+  const _HoverGlassCard({required this.child});
 
   final Widget child;
 
@@ -455,53 +448,20 @@ class _RouteSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          // Interactive View in Map Button with rich hover animation
+          // Interactive In-App View in Map Button with live location fetch
           _HoverMapButton(
-            onPressed: () => _openGoogleMaps(context),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => InAppRouteMapPage(routeDetails: routeDetails),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _openGoogleMaps(BuildContext context) async {
-    final start = routeDetails.startLocation.trim();
-    final dest = routeDetails.destination.trim();
-
-    final isGenericStart = start.isEmpty ||
-        start.toLowerCase() == 'home' ||
-        start.toLowerCase() == 'current location';
-
-    final Uri googleMapsUrl = isGenericStart
-        ? Uri.parse(
-            'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(dest)}&travelmode=transit',
-          )
-        : Uri.parse(
-            'https://www.google.com/maps/dir/?api=1&origin=${Uri.encodeComponent(start)}&destination=${Uri.encodeComponent(dest)}&travelmode=transit',
-          );
-
-    try {
-      final launched = await launchUrl(
-        googleMapsUrl,
-        mode: LaunchMode.externalApplication,
-      );
-
-      if (!launched && context.mounted) {
-        await launchUrl(
-          googleMapsUrl,
-          mode: LaunchMode.platformDefault,
-        );
-      }
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not open Google Maps.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    }
   }
 }
 
@@ -555,8 +515,9 @@ class _HoverMapButtonState extends State<_HoverMapButton> {
             ),
             boxShadow: [
               BoxShadow(
-                color:
-                    AppTheme.teal.withValues(alpha: _isHovered ? 0.28 : 0.08),
+                color: AppTheme.teal.withValues(
+                  alpha: _isHovered ? 0.28 : 0.08,
+                ),
                 blurRadius: _isHovered ? 12 : 6,
                 offset: Offset(0, _isHovered ? 3 : 2),
               ),
@@ -594,9 +555,7 @@ class _HoverMapButtonState extends State<_HoverMapButton> {
 
 /// Reusable Accessibility Score Panel with Granular Sub-Scores Breakdown
 class _AccessibilityScorePanel extends StatelessWidget {
-  const _AccessibilityScorePanel({
-    required this.routeDetails,
-  });
+  const _AccessibilityScorePanel({required this.routeDetails});
 
   final RouteDetails routeDetails;
 
@@ -844,11 +803,7 @@ class _HoverMetricTileState extends State<_HoverMetricTile> {
             AnimatedScale(
               scale: _isHovered ? 1.15 : 1.0,
               duration: const Duration(milliseconds: 180),
-              child: Icon(
-                widget.icon,
-                color: widget.iconColor,
-                size: 20,
-              ),
+              child: Icon(widget.icon, color: widget.iconColor, size: 20),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -915,8 +870,9 @@ class _AccessibilityStatusCard extends StatelessWidget {
           _AccessibilityStatusTile(
             icon: Icons.accessible_rounded,
             title: 'Wheelchair access',
-            statusText:
-                routeDetails.hasWheelchairAccess ? 'Available' : 'Unavailable',
+            statusText: routeDetails.hasWheelchairAccess
+                ? 'Available'
+                : 'Unavailable',
             isWarning: !routeDetails.hasWheelchairAccess,
           ),
           const Divider(height: 16, color: Colors.white12),
@@ -976,8 +932,9 @@ class _AccessibilityStatusTileState extends State<_AccessibilityStatusTile> {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor =
-        widget.isWarning ? const Color(0xFFFFB259) : AppTheme.teal;
+    final statusColor = widget.isWarning
+        ? const Color(0xFFFFB259)
+        : AppTheme.teal;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -1001,8 +958,9 @@ class _AccessibilityStatusTileState extends State<_AccessibilityStatusTile> {
                 color: statusColor.withValues(alpha: _isHovered ? 0.25 : 0.14),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color:
-                      statusColor.withValues(alpha: _isHovered ? 0.50 : 0.15),
+                  color: statusColor.withValues(
+                    alpha: _isHovered ? 0.50 : 0.15,
+                  ),
                 ),
               ),
               child: AnimatedScale(
@@ -1177,12 +1135,14 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
                   height: 40,
                   width: 40,
                   decoration: BoxDecoration(
-                    color: AppTheme.teal
-                        .withValues(alpha: _isHovered ? 0.24 : 0.18),
+                    color: AppTheme.teal.withValues(
+                      alpha: _isHovered ? 0.24 : 0.18,
+                    ),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppTheme.teal
-                          .withValues(alpha: _isHovered ? 0.65 : 0.45),
+                      color: AppTheme.teal.withValues(
+                        alpha: _isHovered ? 0.65 : 0.45,
+                      ),
                       width: _isHovered ? 1.8 : 1.5,
                     ),
                     boxShadow: _isHovered
@@ -1211,8 +1171,9 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
                       duration: const Duration(milliseconds: 200),
                       width: 2,
                       margin: const EdgeInsets.symmetric(vertical: 4),
-                      color: AppTheme.teal
-                          .withValues(alpha: _isHovered ? 0.45 : 0.30),
+                      color: AppTheme.teal.withValues(
+                        alpha: _isHovered ? 0.45 : 0.30,
+                      ),
                     ),
                   ),
               ],
@@ -1375,10 +1336,14 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF5252).withValues(alpha: 0.16),
+                            color: const Color(
+                              0xFFFF5252,
+                            ).withValues(alpha: 0.16),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: const Color(0xFFFF5252).withValues(alpha: 0.4),
+                              color: const Color(
+                                0xFFFF5252,
+                              ).withValues(alpha: 0.4),
                             ),
                           ),
                           child: Row(
@@ -1416,7 +1381,11 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
                             ),
                             visualDensity: VisualDensity.compact,
                           ),
-                          icon: const Icon(Icons.flag_outlined, size: 14, color: AppTheme.aqua),
+                          icon: const Icon(
+                            Icons.flag_outlined,
+                            size: 14,
+                            color: AppTheme.aqua,
+                          ),
                           label: const Text(
                             'Report issue here',
                             style: TextStyle(
@@ -1449,10 +1418,12 @@ class _CommunityHazardBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     if (alerts.isEmpty) return const SizedBox.shrink();
 
-    final hasCritical = alerts.any((a) =>
-        a.impactLevel == 'Critical' ||
-        a.issueType.contains('Ramp') ||
-        a.issueType.contains('Lift'));
+    final hasCritical = alerts.any(
+      (a) =>
+          a.impactLevel == 'Critical' ||
+          a.issueType.contains('Ramp') ||
+          a.issueType.contains('Lift'),
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
@@ -1476,14 +1447,18 @@ class _CommunityHazardBanner extends StatelessWidget {
             children: [
               Icon(
                 Icons.warning_amber_rounded,
-                color: hasCritical ? const Color(0xFFFF5252) : const Color(0xFFFFB300),
+                color: hasCritical
+                    ? const Color(0xFFFF5252)
+                    : const Color(0xFFFFB300),
                 size: 22,
               ),
               const SizedBox(width: 8),
               Text(
                 'ACTIVE CROWDSOURCED HAZARD (${alerts.length})',
                 style: TextStyle(
-                  color: hasCritical ? const Color(0xFFFF5252) : const Color(0xFFFFB300),
+                  color: hasCritical
+                      ? const Color(0xFFFF5252)
+                      : const Color(0xFFFFB300),
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
                   letterSpacing: 0.5,
@@ -1492,17 +1467,21 @@ class _CommunityHazardBanner extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          ...alerts.take(2).map((alert) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  '• ${alert.issueType} reported at ${alert.location}: ${alert.description}',
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 13,
-                    height: 1.35,
+          ...alerts
+              .take(2)
+              .map(
+                (alert) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    '• ${alert.issueType} reported at ${alert.location}: ${alert.description}',
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 13,
+                      height: 1.35,
+                    ),
                   ),
                 ),
-              )),
+              ),
           const SizedBox(height: 4),
           const Text(
             'Transit accessibility volunteers reported this condition. Please plan extra time or ask staff for assistance.',
@@ -1583,8 +1562,11 @@ class _SDGImpactCard extends StatelessWidget {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.eco_rounded,
-                              size: 16, color: AppTheme.teal),
+                          Icon(
+                            Icons.eco_rounded,
+                            size: 16,
+                            color: AppTheme.teal,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'SDG 11',
@@ -1632,8 +1614,11 @@ class _SDGImpactCard extends StatelessWidget {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.diversity_3_rounded,
-                              size: 16, color: AppTheme.aqua),
+                          Icon(
+                            Icons.diversity_3_rounded,
+                            size: 16,
+                            color: AppTheme.aqua,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'SDG 10',
@@ -1687,9 +1672,8 @@ class _RouteActionFooter extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => LiveJourneyCompanionPage(
-                  routeDetails: routeDetails,
-                ),
+                builder: (_) =>
+                    LiveJourneyCompanionPage(routeDetails: routeDetails),
               ),
             );
           },
@@ -1706,10 +1690,7 @@ class _RouteActionFooter extends StatelessWidget {
           icon: const Icon(Icons.navigation_rounded, size: 22),
           label: const Text(
             'Start Journey (Live Companion)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
           ),
         ),
         const SizedBox(height: 12),
@@ -1735,10 +1716,7 @@ class _RouteActionFooter extends StatelessWidget {
           icon: const Icon(Icons.flag_outlined, size: 18, color: AppTheme.aqua),
           label: const Text(
             'Report an Issue on this Route',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
           ),
         ),
       ],
