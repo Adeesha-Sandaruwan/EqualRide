@@ -13,7 +13,14 @@ import '../widgets/impact_level_selector.dart';
 import '../widgets/glass_panel.dart';
 
 class AccessibilityReportPage extends StatefulWidget {
-  const AccessibilityReportPage({super.key});
+  const AccessibilityReportPage({
+    super.key,
+    this.initialLocation,
+    this.initialIssueType,
+  });
+
+  final String? initialLocation;
+  final String? initialIssueType;
 
   @override
   State<AccessibilityReportPage> createState() =>
@@ -105,6 +112,12 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialLocation != null && widget.initialLocation!.isNotEmpty) {
+      locationController.text = widget.initialLocation!;
+    }
+    if (widget.initialIssueType != null) {
+      issueType = widget.initialIssueType;
+    }
     unawaited(restoreDraft());
   }
 

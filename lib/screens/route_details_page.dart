@@ -3,9 +3,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/community_report.dart';
 import '../models/route_details.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
+import 'accessibility_report_page.dart';
+import 'live_journey_companion_page.dart';
 
 class RouteDetailsPage extends StatelessWidget {
   const RouteDetailsPage({
@@ -59,16 +62,20 @@ class RouteDetailsPage extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                   children: [
+                    // Active Crowdsourced Hazard Banner (if any)
+                    if (routeDetails.communityAlerts.isNotEmpty)
+                      _CommunityHazardBanner(
+                        alerts: routeDetails.communityAlerts,
+                      ),
+
                     // Start & Destination Summary Card with Hover effects
                     _RouteSummaryCard(routeDetails: routeDetails),
 
                     const SizedBox(height: 18),
 
-                    // Accessibility Score Panel with Hover effects
+                    // Accessibility Score Panel with Granular Breakdown
                     _AccessibilityScorePanel(
-                      score: routeDetails.accessibilityScore,
-                      durationMinutes: routeDetails.durationMinutes,
-                      transfers: routeDetails.transfers,
+                      routeDetails: routeDetails,
                     ),
 
                     const SizedBox(height: 24),
@@ -151,10 +158,21 @@ class RouteDetailsPage extends StatelessWidget {
                                 return _JourneyTimelineItem(
                                   step: step,
                                   isLast: isLast,
+                                  routeTitle: routeDetails.routeTitle,
                                 );
                               },
                             ),
                     ),
+
+                    const SizedBox(height: 24),
+
+                    // UN Sustainable Development Goals Impact Card (SDG 10 & 11)
+                    _SDGImpactCard(routeDetails: routeDetails),
+
+                    const SizedBox(height: 24),
+
+                    // Active Navigation Companion & Quick Report Footer
+                    _RouteActionFooter(routeDetails: routeDetails),
                   ],
                 ),
               ),
@@ -574,19 +592,16 @@ class _HoverMapButtonState extends State<_HoverMapButton> {
   }
 }
 
-/// Reusable Accessibility Score Panel with Hover effects
+/// Reusable Accessibility Score Panel with Granular Sub-Scores Breakdown
 class _AccessibilityScorePanel extends StatelessWidget {
   const _AccessibilityScorePanel({
-    required this.score,
-    required this.durationMinutes,
-    required this.transfers,
+    required this.routeDetails,
   });
 
-  final int score;
-  final int durationMinutes;
-  final int transfers;
+  final RouteDetails routeDetails;
 
   String get _ratingDescription {
+    final score = routeDetails.accessibilityScore;
     if (score >= 85) return 'Highly Accessible Route';
     if (score >= 65) return 'Moderate Accessibility';
     return 'Limited Accessibility';
@@ -594,6 +609,8 @@ class _AccessibilityScorePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final score = routeDetails.accessibilityScore;
+
     return _HoverGlassCard(
       child: Column(
         children: [
@@ -634,7 +651,7 @@ class _AccessibilityScorePanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Accessibility Score',
+                      'Overall Accessibility Score',
                       style: TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 12,
@@ -660,6 +677,40 @@ class _AccessibilityScorePanel extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          // Sub-scores Granular Breakdown (SDG 10 Core Evaluation)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Column(
+              children: [
+                _SubScoreRow(
+                  label: 'Boarding Access & Ramps',
+                  score: routeDetails.boardingScore,
+                  color: AppTheme.teal,
+                  icon: Icons.accessible_forward_rounded,
+                ),
+                const SizedBox(height: 8),
+                _SubScoreRow(
+                  label: 'Pedestrian Path & Transfers',
+                  score: routeDetails.pathwayScore,
+                  color: AppTheme.aqua,
+                  icon: Icons.directions_walk_rounded,
+                ),
+                const SizedBox(height: 8),
+                _SubScoreRow(
+                  label: 'Priority Seating & Space',
+                  score: routeDetails.seatingScore,
+                  color: const Color(0xFF64D2FF),
+                  icon: Icons.event_seat_rounded,
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 14),
           const Divider(height: 1, color: Colors.white12),
           const SizedBox(height: 14),
@@ -669,7 +720,7 @@ class _AccessibilityScorePanel extends StatelessWidget {
                 child: _HoverMetricTile(
                   icon: Icons.schedule_rounded,
                   iconColor: AppTheme.aqua,
-                  title: '$durationMinutes mins',
+                  title: '${routeDetails.durationMinutes} mins',
                   subtitle: 'Total duration',
                 ),
               ),
@@ -683,9 +734,9 @@ class _AccessibilityScorePanel extends StatelessWidget {
                 child: _HoverMetricTile(
                   icon: Icons.swap_horiz_rounded,
                   iconColor: AppTheme.teal,
-                  title: transfers == 0
+                  title: routeDetails.transfers == 0
                       ? '0 transfers (Direct)'
-                      : '$transfers transfers',
+                      : '${routeDetails.transfers} transfers',
                   subtitle: 'Transfers / switch',
                 ),
               ),
@@ -693,6 +744,62 @@ class _AccessibilityScorePanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SubScoreRow extends StatelessWidget {
+  const _SubScoreRow({
+    required this.label,
+    required this.score,
+    required this.color,
+    required this.icon,
+  });
+
+  final String label;
+  final int score;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              '$score%',
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: (score / 100).clamp(0.0, 1.0),
+            minHeight: 5,
+            backgroundColor: Colors.white.withValues(alpha: 0.1),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -992,10 +1099,12 @@ class _JourneyTimelineItem extends StatefulWidget {
   const _JourneyTimelineItem({
     required this.step,
     required this.isLast,
+    this.routeTitle,
   });
 
   final JourneyStep step;
   final bool isLast;
+  final String? routeTitle;
 
   @override
   State<_JourneyTimelineItem> createState() => _JourneyTimelineItemState();
@@ -1036,6 +1145,17 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
       default:
         return Icons.navigation_rounded;
     }
+  }
+
+  void _reportAtStop(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AccessibilityReportPage(
+          initialLocation: widget.step.title,
+          initialIssueType: 'Step-free access issue',
+        ),
+      ),
+    );
   }
 
   @override
@@ -1104,16 +1224,16 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
                 padding: EdgeInsets.only(bottom: widget.isLast ? 0 : 20),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: _isHovered
                         ? Colors.white.withValues(alpha: 0.05)
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: _isHovered
-                          ? AppTheme.teal.withValues(alpha: 0.24)
-                          : Colors.transparent,
+                          ? AppTheme.teal.withValues(alpha: 0.28)
+                          : Colors.white.withValues(alpha: 0.06),
                     ),
                   ),
                   child: Column(
@@ -1181,6 +1301,132 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
                           height: 1.35,
                         ),
                       ),
+                      if (widget.step.surfaceCondition != null) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.accessible_forward_rounded,
+                                size: 15,
+                                color: AppTheme.teal,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  widget.step.surfaceCondition!,
+                                  style: const TextStyle(
+                                    color: AppTheme.textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (widget.step.facilityNote != null) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.aqua.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.info_outline_rounded,
+                                size: 15,
+                                color: AppTheme.aqua,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  widget.step.facilityNote!,
+                                  style: const TextStyle(
+                                    color: AppTheme.aqua,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (widget.step.hazardAlert != null) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF5252).withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFFFF5252).withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                size: 15,
+                                color: Color(0xFFFF5252),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  widget.step.hazardAlert!,
+                                  style: const TextStyle(
+                                    color: Color(0xFFFF8B8B),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      // Contextual Report Button (SDG 10 Commuter Reporting Loop)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: () => _reportAtStop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          icon: const Icon(Icons.flag_outlined, size: 14, color: AppTheme.aqua),
+                          label: const Text(
+                            'Report issue here',
+                            style: TextStyle(
+                              color: AppTheme.aqua,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1189,6 +1435,313 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Active Crowdsourced Hazard Alert Banner
+class _CommunityHazardBanner extends StatelessWidget {
+  const _CommunityHazardBanner({required this.alerts});
+
+  final List<CommunityReport> alerts;
+
+  @override
+  Widget build(BuildContext context) {
+    if (alerts.isEmpty) return const SizedBox.shrink();
+
+    final hasCritical = alerts.any((a) =>
+        a.impactLevel == 'Critical' ||
+        a.issueType.contains('Ramp') ||
+        a.issueType.contains('Lift'));
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: hasCritical
+            ? const Color(0xFFFF5252).withValues(alpha: 0.18)
+            : const Color(0xFFFFB300).withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: hasCritical
+              ? const Color(0xFFFF5252).withValues(alpha: 0.55)
+              : const Color(0xFFFFB300).withValues(alpha: 0.55),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: hasCritical ? const Color(0xFFFF5252) : const Color(0xFFFFB300),
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'ACTIVE CROWDSOURCED HAZARD (${alerts.length})',
+                style: TextStyle(
+                  color: hasCritical ? const Color(0xFFFF5252) : const Color(0xFFFFB300),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...alerts.take(2).map((alert) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  '• ${alert.issueType} reported at ${alert.location}: ${alert.description}',
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+              )),
+          const SizedBox(height: 4),
+          const Text(
+            'Transit accessibility volunteers reported this condition. Please plan extra time or ask staff for assistance.',
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// UN Sustainable Development Goals Impact Card (SDG 10 & 11)
+class _SDGImpactCard extends StatelessWidget {
+  const _SDGImpactCard({required this.routeDetails});
+
+  final RouteDetails routeDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HoverGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.teal.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.public_rounded,
+                  color: AppTheme.teal,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'UN Sustainable Development Impact',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      'SDG 10 (Inclusion) & SDG 11 (Sustainable Cities)',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.eco_rounded,
+                              size: 16, color: AppTheme.teal),
+                          SizedBox(width: 4),
+                          Text(
+                            'SDG 11',
+                            style: TextStyle(
+                              color: AppTheme.teal,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        routeDetails.carbonSavedKg,
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const Text(
+                        'CO₂ saved vs. car',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.diversity_3_rounded,
+                              size: 16, color: AppTheme.aqua),
+                          SizedBox(width: 4),
+                          Text(
+                            'SDG 10',
+                            style: TextStyle(
+                              color: AppTheme.aqua,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        routeDetails.inclusivityRating,
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const Text(
+                        'Equal transit access',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom Action Footer for Navigation & Crowdsourced Reporting
+class _RouteActionFooter extends StatelessWidget {
+  const _RouteActionFooter({required this.routeDetails});
+
+  final RouteDetails routeDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        FilledButton.icon(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => LiveJourneyCompanionPage(
+                  routeDetails: routeDetails,
+                ),
+              ),
+            );
+          },
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.teal,
+            foregroundColor: AppTheme.navy,
+            minimumSize: const Size.fromHeight(56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            elevation: 4,
+            shadowColor: AppTheme.teal.withValues(alpha: 0.35),
+          ),
+          icon: const Icon(Icons.navigation_rounded, size: 22),
+          label: const Text(
+            'Start Journey (Live Companion)',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => AccessibilityReportPage(
+                  initialLocation: routeDetails.routeTitle,
+                  initialIssueType: 'Ramp unavailable',
+                ),
+              ),
+            );
+          },
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+            foregroundColor: AppTheme.textPrimary,
+            minimumSize: const Size.fromHeight(50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
+          icon: const Icon(Icons.flag_outlined, size: 18, color: AppTheme.aqua),
+          label: const Text(
+            'Report an Issue on this Route',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
