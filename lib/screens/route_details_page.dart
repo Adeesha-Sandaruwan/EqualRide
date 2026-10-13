@@ -62,7 +62,7 @@ class RouteDetailsPage extends StatelessWidget {
             return false;
           },
         ),
-        announceNow: true,
+        announceNow: false,
       );
     });
 
@@ -223,124 +223,72 @@ class RouteDetailsPage extends StatelessWidget {
   }
 }
 
-/// Back button with glass hover animation
-class _HoverBackButton extends StatefulWidget {
+/// Clean static Back button without hover animations (easy and stable for elderly users)
+class _HoverBackButton extends StatelessWidget {
   const _HoverBackButton({required this.onPressed});
 
   final VoidCallback onPressed;
 
   @override
-  State<_HoverBackButton> createState() => _HoverBackButtonState();
-}
-
-class _HoverBackButtonState extends State<_HoverBackButton> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(9),
-          decoration: BoxDecoration(
-            color: _isHovered
-                ? AppTheme.teal.withValues(alpha: 0.20)
-                : Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: _isHovered
-                  ? AppTheme.teal.withValues(alpha: 0.55)
-                  : Colors.white.withValues(alpha: 0.16),
-            ),
-            boxShadow: _isHovered
-                ? [
-                    BoxShadow(
-                      color: AppTheme.teal.withValues(alpha: 0.25),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.all(9),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.16),
           ),
-          child: AnimatedScale(
-            scale: _isHovered ? 1.08 : 1.0,
-            duration: const Duration(milliseconds: 180),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: AppTheme.textPrimary,
-              size: 20,
-            ),
-          ),
+        ),
+        child: const Icon(
+          Icons.arrow_back_rounded,
+          color: AppTheme.textPrimary,
+          size: 20,
         ),
       ),
     );
   }
 }
 
-/// Interactive Glass Container with smooth hover lift and glowing border
-class _HoverGlassCard extends StatefulWidget {
+/// Calm static Glass Container without hover lift or shifting borders (for elderly usability)
+class _HoverGlassCard extends StatelessWidget {
   const _HoverGlassCard({required this.child});
 
   final Widget child;
 
   @override
-  State<_HoverGlassCard> createState() => _HoverGlassCardState();
-}
-
-class _HoverGlassCardState extends State<_HoverGlassCard> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    const glow = AppTheme.teal;
     const borderRadius = 24.0;
     const padding = EdgeInsets.all(20);
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        transform: Matrix4.translationValues(0, _isHovered ? -1.5 : 0, 0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(borderRadius),
-          boxShadow: [
-            BoxShadow(
-              color: _isHovered
-                  ? glow.withValues(alpha: 0.10)
-                  : Colors.black.withValues(alpha: 0.16),
-              blurRadius: _isHovered ? 20 : 16,
-              offset: Offset(0, _isHovered ? 5 : 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: padding,
-              decoration: BoxDecoration(
-                color: _isHovered
-                    ? Colors.white.withValues(alpha: 0.11)
-                    : Colors.white.withValues(alpha: 0.09),
-                borderRadius: BorderRadius.circular(borderRadius),
-                border: Border.all(
-                  color: _isHovered
-                      ? glow.withValues(alpha: 0.32)
-                      : Colors.white.withValues(alpha: 0.18),
-                  width: 1.0,
-                ),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.16),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.09),
+              borderRadius: BorderRadius.circular(borderRadius),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.18),
+                width: 1.0,
               ),
-              child: widget.child,
             ),
+            child: child,
           ),
         ),
       ),
@@ -509,88 +457,59 @@ class _RouteSummaryCard extends StatelessWidget {
   }
 }
 
-/// View in Map button with responsive hover effects
-class _HoverMapButton extends StatefulWidget {
+/// View in Map button (stable and static for elderly users)
+class _HoverMapButton extends StatelessWidget {
   const _HoverMapButton({required this.onPressed});
 
   final VoidCallback onPressed;
 
   @override
-  State<_HoverMapButton> createState() => _HoverMapButtonState();
-}
-
-class _HoverMapButtonState extends State<_HoverMapButton> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(0, _isHovered ? -1.0 : 0, 0),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          decoration: BoxDecoration(
-            gradient: _isHovered
-                ? const LinearGradient(
-                    colors: [Color(0xFF38E5D8), AppTheme.teal],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : LinearGradient(
-                    colors: [
-                      AppTheme.teal.withValues(alpha: 0.16),
-                      AppTheme.teal.withValues(alpha: 0.08),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _isHovered
-                  ? AppTheme.aqua
-                  : AppTheme.teal.withValues(alpha: 0.55),
-              width: 1.2,
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.teal.withValues(alpha: 0.20),
+              AppTheme.teal.withValues(alpha: 0.10),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppTheme.teal.withValues(alpha: 0.55),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.teal.withValues(alpha: 0.10),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.teal.withValues(
-                  alpha: _isHovered ? 0.28 : 0.08,
-                ),
-                blurRadius: _isHovered ? 12 : 6,
-                offset: Offset(0, _isHovered ? 3 : 2),
+          ],
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.map_rounded,
+              size: 20,
+              color: AppTheme.aqua,
+            ),
+            SizedBox(width: 10),
+            Text(
+              'View in Map',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedScale(
-                scale: _isHovered ? 1.08 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  Icons.map_rounded,
-                  size: 20,
-                  color: _isHovered ? AppTheme.navy : AppTheme.aqua,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'View in Map',
-                style: TextStyle(
-                  color: _isHovered ? AppTheme.navy : AppTheme.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -807,8 +726,8 @@ class _SubScoreRow extends StatelessWidget {
   }
 }
 
-/// Interactive Metric Tile inside Score Panel
-class _HoverMetricTile extends StatefulWidget {
+/// Metric Tile inside Score Panel (clean and static for elderly users)
+class _HoverMetricTile extends StatelessWidget {
   const _HoverMetricTile({
     required this.icon,
     required this.iconColor,
@@ -822,60 +741,42 @@ class _HoverMetricTile extends StatefulWidget {
   final String subtitle;
 
   @override
-  State<_HoverMetricTile> createState() => _HoverMetricTileState();
-}
-
-class _HoverMetricTileState extends State<_HoverMetricTile> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: _isHovered
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            AnimatedScale(
-              scale: _isHovered ? 1.15 : 1.0,
-              duration: const Duration(milliseconds: 180),
-              child: Icon(widget.icon, color: widget.iconColor, size: 20),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
                   ),
-                  Text(
-                    widget.subtitle,
-                    style: const TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 11,
-                    ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -952,8 +853,8 @@ class _AccessibilityStatusCard extends StatelessWidget {
   }
 }
 
-/// Reusable Tile for an individual accessibility facility with hover highlight
-class _AccessibilityStatusTile extends StatefulWidget {
+/// Reusable Tile for an individual accessibility facility (clean static style for elderly usability)
+class _AccessibilityStatusTile extends StatelessWidget {
   const _AccessibilityStatusTile({
     required this.icon,
     required this.title,
@@ -967,115 +868,80 @@ class _AccessibilityStatusTile extends StatefulWidget {
   final bool isWarning;
 
   @override
-  State<_AccessibilityStatusTile> createState() =>
-      _AccessibilityStatusTileState();
-}
-
-class _AccessibilityStatusTileState extends State<_AccessibilityStatusTile> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final statusColor = widget.isWarning
+    final statusColor = isWarning
         ? const Color(0xFFFFB259)
         : AppTheme.teal;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: _isHovered
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              height: 38,
-              width: 38,
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: _isHovered ? 0.25 : 0.14),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: statusColor.withValues(
-                    alpha: _isHovered ? 0.50 : 0.15,
-                  ),
-                ),
-              ),
-              child: AnimatedScale(
-                scale: _isHovered ? 1.10 : 1.0,
-                duration: const Duration(milliseconds: 180),
-                child: Icon(widget.icon, color: statusColor, size: 20),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 38,
+            width: 38,
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: statusColor.withValues(alpha: 0.20),
               ),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                widget.title,
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
+            child: Icon(icon, color: statusColor, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
               ),
             ),
-            _StatusBadge(
-              label: widget.statusText,
-              icon: widget.isWarning
-                  ? Icons.warning_amber_rounded
-                  : Icons.check_circle_outline_rounded,
-              isWarning: widget.isWarning,
-              isHovered: _isHovered,
-            ),
-          ],
-        ),
+          ),
+          _StatusBadge(
+            label: statusText,
+            icon: isWarning
+                ? Icons.warning_amber_rounded
+                : Icons.check_circle_outline_rounded,
+            isWarning: isWarning,
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Reusable Status Badge with accessible iconography and explicit warning/success style
+/// Reusable Status Badge with accessible iconography (static without hover)
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({
     required this.label,
     required this.icon,
     this.isWarning = false,
-    this.isHovered = false,
   });
 
   final String label;
   final IconData icon;
   final bool isWarning;
-  final bool isHovered;
 
   @override
   Widget build(BuildContext context) {
     final badgeColor = isWarning ? const Color(0xFFFFB259) : AppTheme.teal;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: badgeColor.withValues(alpha: isHovered ? 0.22 : 0.14),
+        color: badgeColor.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: badgeColor.withValues(alpha: isHovered ? 0.55 : 0.35),
+          color: badgeColor.withValues(alpha: 0.35),
           width: 1,
         ),
-        boxShadow: isHovered
-            ? [
-                BoxShadow(
-                  color: badgeColor.withValues(alpha: 0.25),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1096,8 +962,8 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-/// Reusable Journey Timeline Step Item with interactive hover effect
-class _JourneyTimelineItem extends StatefulWidget {
+/// Reusable Journey Timeline Step Item (clean static design for elderly accessibility)
+class _JourneyTimelineItem extends StatelessWidget {
   const _JourneyTimelineItem({
     required this.step,
     required this.isLast,
@@ -1107,13 +973,6 @@ class _JourneyTimelineItem extends StatefulWidget {
   final JourneyStep step;
   final bool isLast;
   final String? routeTitle;
-
-  @override
-  State<_JourneyTimelineItem> createState() => _JourneyTimelineItemState();
-}
-
-class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
-  bool _isHovered = false;
 
   IconData _resolveStepIcon(JourneyStep step) {
     if (step.iconName != null) {
@@ -1153,7 +1012,7 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => AccessibilityReportPage(
-          initialLocation: widget.step.title,
+          initialLocation: step.title,
           initialIssueType: 'Step-free access issue',
         ),
       ),
@@ -1162,295 +1021,264 @@ class _JourneyTimelineItemState extends State<_JourneyTimelineItem> {
 
   @override
   Widget build(BuildContext context) {
-    final stepIcon = _resolveStepIcon(widget.step);
+    final stepIcon = _resolveStepIcon(step);
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Timeline icon indicator & connecting line
-            Column(
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 40,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    color: AppTheme.teal.withValues(
-                      alpha: _isHovered ? 0.24 : 0.18,
-                    ),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppTheme.teal.withValues(
-                        alpha: _isHovered ? 0.65 : 0.45,
-                      ),
-                      width: _isHovered ? 1.8 : 1.5,
-                    ),
-                    boxShadow: _isHovered
-                        ? [
-                            BoxShadow(
-                              color: AppTheme.teal.withValues(alpha: 0.22),
-                              blurRadius: 7,
-                              offset: const Offset(0, 1),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: AnimatedScale(
-                    scale: _isHovered ? 1.06 : 1.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      stepIcon,
-                      color: _isHovered ? AppTheme.aqua : AppTheme.teal,
-                      size: 20,
-                    ),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Timeline icon indicator & connecting line
+          Column(
+            children: [
+              Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: AppTheme.teal.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.teal.withValues(alpha: 0.45),
+                    width: 1.5,
                   ),
                 ),
-                if (!widget.isLast)
-                  Expanded(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 2,
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      color: AppTheme.teal.withValues(
-                        alpha: _isHovered ? 0.45 : 0.30,
-                      ),
-                    ),
+                child: Icon(
+                  stepIcon,
+                  color: AppTheme.teal,
+                  size: 20,
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: AppTheme.teal.withValues(alpha: 0.30),
                   ),
-              ],
-            ),
-            const SizedBox(width: 16),
-            // Step content with interactive card
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(bottom: widget.isLast ? 0 : 20),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: _isHovered
-                        ? Colors.white.withValues(alpha: 0.05)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _isHovered
-                          ? AppTheme.teal.withValues(alpha: 0.28)
-                          : Colors.white.withValues(alpha: 0.06),
-                    ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          // Step content
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _isHovered
-                                  ? AppTheme.aqua.withValues(alpha: 0.25)
-                                  : AppTheme.aqua.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              widget.step.stepType.toUpperCase(),
-                              style: const TextStyle(
-                                color: AppTheme.aqua,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.timer_outlined,
-                                size: 14,
-                                color: AppTheme.textSecondary,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                widget.step.durationOrWaitTime,
-                                style: const TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.step.title,
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.step.subtitle,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
-                          height: 1.35,
-                        ),
-                      ),
-                      if (widget.step.surfaceCondition != null) ...[
-                        const SizedBox(height: 10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
+                            horizontal: 9,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(10),
+                            color: AppTheme.aqua.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.accessible_forward_rounded,
-                                size: 15,
-                                color: AppTheme.teal,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  widget.step.surfaceCondition!,
-                                  style: const TextStyle(
-                                    color: AppTheme.textPrimary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      if (widget.step.facilityNote != null) ...[
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.aqua.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.info_outline_rounded,
-                                size: 15,
-                                color: AppTheme.aqua,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  widget.step.facilityNote!,
-                                  style: const TextStyle(
-                                    color: AppTheme.aqua,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      if (widget.step.hazardAlert != null) ...[
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFFFF5252,
-                            ).withValues(alpha: 0.16),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: const Color(
-                                0xFFFF5252,
-                              ).withValues(alpha: 0.4),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.warning_amber_rounded,
-                                size: 15,
-                                color: Color(0xFFFF5252),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  widget.step.hazardAlert!,
-                                  style: const TextStyle(
-                                    color: Color(0xFFFF8B8B),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                      // Contextual Report Button (SDG 10 Commuter Reporting Loop)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          onPressed: () => _reportAtStop(context),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          icon: const Icon(
-                            Icons.flag_outlined,
-                            size: 14,
-                            color: AppTheme.aqua,
-                          ),
-                          label: const Text(
-                            'Report issue here',
-                            style: TextStyle(
+                          child: Text(
+                            step.stepType.toUpperCase(),
+                            style: const TextStyle(
                               color: AppTheme.aqua,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
                             ),
                           ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.timer_outlined,
+                              size: 14,
+                              color: AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              step.durationOrWaitTime,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      step.title,
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      step.subtitle,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                    if (step.surfaceCondition != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.accessible_forward_rounded,
+                              size: 15,
+                              color: AppTheme.teal,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                step.surfaceCondition!,
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
+                    if (step.facilityNote != null) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.aqua.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              size: 15,
+                              color: AppTheme.aqua,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                step.facilityNote!,
+                                style: const TextStyle(
+                                  color: AppTheme.aqua,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (step.hazardAlert != null) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFFF5252,
+                          ).withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(
+                              0xFFFF5252,
+                            ).withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              size: 15,
+                              color: Color(0xFFFF5252),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                step.hazardAlert!,
+                                style: const TextStyle(
+                                  color: Color(0xFFFF8B8B),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    // Contextual Report Button (SDG 10 Commuter Reporting Loop)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => _reportAtStop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        icon: const Icon(
+                          Icons.flag_outlined,
+                          size: 14,
+                          color: AppTheme.aqua,
+                        ),
+                        label: const Text(
+                          'Report issue here',
+                          style: TextStyle(
+                            color: AppTheme.aqua,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
+
 
 /// Active Crowdsourced Hazard Alert Banner
 class _CommunityHazardBanner extends StatelessWidget {
