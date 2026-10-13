@@ -35,16 +35,95 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final fromController = TextEditingController();
   final destinationController = TextEditingController();
+  final fromFocusNode = FocusNode();
+  final destinationFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     fromController.text =
         AppStrings.text(widget.preferences.language, 'currentLocation');
+
+    fromFocusNode.addListener(_onFromFocusChange);
+  }
+
+  void _onFromFocusChange() {
+    if (fromFocusNode.hasFocus) {
+      _clearIfCurrentLocation();
+    } else {
+      if (fromController.text.trim().isEmpty) {
+        fromController.text =
+            AppStrings.text(widget.preferences.language, 'currentLocation');
+        if (mounted) setState(() {});
+      }
+    }
+  }
+
+  bool _isCurrentLocation(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return false;
+    final eng =
+        AppStrings.text(AppLanguage.english, 'currentLocation').toLowerCase();
+    final sinh = AppStrings.text(AppLanguage.sinhala, 'currentLocation');
+    final lower = trimmed.toLowerCase();
+    return lower == eng ||
+        lower == 'your current location' ||
+        trimmed == sinh ||
+        lower == 'current location';
+  }
+
+  void _clearIfCurrentLocation() {
+    if (_isCurrentLocation(fromController.text)) {
+      fromController.clear();
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _resetToCurrentLocation() {
+    fromController.text =
+        AppStrings.text(widget.preferences.language, 'currentLocation');
+    fromFocusNode.unfocus();
+    if (mounted) setState(() {});
+  }
+
+  void _handleFromTextChanged(String value) {
+    final eng = AppStrings.text(AppLanguage.english, 'currentLocation');
+    final sinh = AppStrings.text(AppLanguage.sinhala, 'currentLocation');
+
+    if (value.toLowerCase().contains(eng.toLowerCase()) &&
+        value.trim().toLowerCase() != eng.toLowerCase()) {
+      final clean = value
+          .replaceAll(RegExp(RegExp.escape(eng), caseSensitive: false), '')
+          .trimLeft();
+      fromController.value = TextEditingValue(
+        text: clean,
+        selection: TextSelection.collapsed(offset: clean.length),
+      );
+    } else if (value.contains(sinh) && value.trim() != sinh) {
+      final clean = value.replaceAll(sinh, '').trimLeft();
+      fromController.value = TextEditingValue(
+        text: clean,
+        selection: TextSelection.collapsed(offset: clean.length),
+      );
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.preferences.language != widget.preferences.language) {
+      if (_isCurrentLocation(fromController.text)) {
+        fromController.text =
+            AppStrings.text(widget.preferences.language, 'currentLocation');
+      }
+    }
   }
 
   @override
   void dispose() {
+    fromFocusNode.removeListener(_onFromFocusChange);
+    fromFocusNode.dispose();
+    destinationFocusNode.dispose();
     fromController.dispose();
     destinationController.dispose();
     super.dispose();
@@ -68,7 +147,7 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RouteResultsPage(
-          from: from.isEmpty
+          from: from.isEmpty || _isCurrentLocation(from)
               ? AppStrings.text(
                   widget.preferences.language,
                   'currentLocation',
@@ -164,30 +243,69 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     TextField(
                       controller: fromController,
+                      focusNode: fromFocusNode,
                       textCapitalization: TextCapitalization.words,
+                      onTap: _clearIfCurrentLocation,
+                      onChanged: (value) {
+                        _handleFromTextChanged(value);
+                        setState(() {});
+                      },
                       decoration: InputDecoration(
                         labelText: t('from'),
-                        hintText: 'Your current location',
-                        prefixIcon: const Icon(Icons.my_location_rounded),
-                        suffixIcon: IconButton(
-                          tooltip: 'Choose on map',
-                          onPressed: () => _pickOnMap(fromController),
-                          icon: const Icon(Icons.map_rounded),
+                        hintText: t('currentLocation'),
+                        prefixIcon: IconButton(
+                          tooltip: 'Use current location',
+                          icon: const Icon(Icons.my_location_rounded),
+                          onPressed: _resetToCurrentLocation,
+                        ),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (fromController.text.isNotEmpty &&
+                                !_isCurrentLocation(fromController.text))
+                              IconButton(
+                                tooltip: 'Reset to current location',
+                                icon: const Icon(Icons.close_rounded, size: 20),
+                                onPressed: _resetToCurrentLocation,
+                              ),
+                            IconButton(
+                              tooltip: 'Choose on map',
+                              onPressed: () => _pickOnMap(fromController),
+                              icon: const Icon(Icons.map_rounded),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: destinationController,
+                      focusNode: destinationFocusNode,
                       textCapitalization: TextCapitalization.words,
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
                         labelText: t('to'),
                         hintText: t('destination'),
                         prefixIcon: const Icon(Icons.location_on_rounded),
-                        suffixIcon: IconButton(
-                          tooltip: 'Choose on map',
-                          onPressed: () => _pickOnMap(destinationController),
-                          icon: const Icon(Icons.map_rounded),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (destinationController.text.isNotEmpty)
+                              IconButton(
+                                tooltip: 'Clear',
+                                icon: const Icon(Icons.close_rounded, size: 20),
+                                onPressed: () {
+                                  destinationController.clear();
+                                  setState(() {});
+                                },
+                              ),
+                            IconButton(
+                              tooltip: 'Choose on map',
+                              onPressed: () =>
+                                  _pickOnMap(destinationController),
+                              icon: const Icon(Icons.map_rounded),
+                            ),
+                          ],
                         ),
                       ),
                       onSubmitted: (_) => findRoute(),
@@ -307,7 +425,7 @@ class _HomeIcon extends StatelessWidget {
       height: 46,
       width: 46,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.16),
+        color: color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Icon(icon, color: color),
