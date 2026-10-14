@@ -8,9 +8,12 @@ import 'insight_palette.dart';
 /// Ranked list of the routes and places with the most severe open problems.
 /// Rows are informational only; they do not open the Community Reports list.
 class HotspotList extends StatelessWidget {
-  const HotspotList({super.key, required this.entries});
+  const HotspotList({super.key, required this.entries, this.nameOf});
 
   final List<InsightEntry> entries;
+
+  /// Maps a stored label (for example coordinates) to a readable place name.
+  final String Function(String label)? nameOf;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +46,7 @@ class HotspotList extends StatelessWidget {
               Divider(height: 1, color: Colors.white.withValues(alpha: 0.10)),
             _HotspotRow(
               entry: entries[i],
+              name: nameOf?.call(entries[i].label) ?? entries[i].label,
               rank: i + 1,
               share: maxSeverity == 0 ? 0 : entries[i].severityScore / maxSeverity,
             ),
@@ -56,11 +60,13 @@ class HotspotList extends StatelessWidget {
 class _HotspotRow extends StatelessWidget {
   const _HotspotRow({
     required this.entry,
+    required this.name,
     required this.rank,
     required this.share,
   });
 
   final InsightEntry entry;
+  final String name;
   final int rank;
   final double share;
 
@@ -69,7 +75,7 @@ class _HotspotRow extends StatelessWidget {
     final color = InsightPalette.forSeverityShare(share);
 
     return Semantics(
-      label: 'Rank $rank, ${entry.label}. ${entry.openCount} open problems, '
+      label: 'Rank $rank, $name. ${entry.openCount} open problems, '
           'severity score ${entry.severityScore}',
       excludeSemantics: true,
       child: Padding(
@@ -96,7 +102,7 @@ class _HotspotRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entry.label,
+                    name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

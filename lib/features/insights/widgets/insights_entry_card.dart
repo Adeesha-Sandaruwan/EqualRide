@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 
+import '../../../models/accessibility_preferences.dart';
 import '../../../theme/app_theme.dart';
 import '../screens/insights_dashboard_page.dart';
+import '../services/insights_strings.dart';
 
 /// Featured Home entry for the Insights dashboard. Deliberately styled as a
 /// gradient banner so it reads as analytics, not as another report list tile.
 class InsightsEntryCard extends StatelessWidget {
-  const InsightsEntryCard({super.key});
+  const InsightsEntryCard({super.key, this.language = AppLanguage.english});
+
+  final AppLanguage language;
 
   @override
   Widget build(BuildContext context) {
+    String t(String key) => InsightsStrings.text(language, key);
+
     return Semantics(
       button: true,
-      label: 'Accessibility Insights. See problem hotspots and trends.',
+      label: '${t('entryTitle')}. ${t('entrySubtitle')}',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -20,7 +26,7 @@ class InsightsEntryCard extends StatelessWidget {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const InsightsDashboardPage(),
+                builder: (_) => InsightsDashboardPage(language: language),
               ),
             );
           },
@@ -57,18 +63,18 @@ class InsightsEntryCard extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.circle,
                               size: 8,
                               color: Color(0xFF7CFFB2),
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
-                              'LIVE MAP',
-                              style: TextStyle(
+                              t('liveMap'),
+                              style: const TextStyle(
                                 color: AppTheme.textPrimary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
@@ -80,16 +86,16 @@ class InsightsEntryCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Accessibility Insights',
+                        t('entryTitle'),
                         style:
                             Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontSize: 20,
                                 ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        'Problem hotspots, trends and live conditions',
-                        style: TextStyle(
+                      Text(
+                        t('entrySubtitle'),
+                        style: const TextStyle(
                           color: AppTheme.textPrimary,
                           height: 1.3,
                         ),

@@ -1,10 +1,18 @@
+﻿import '../../../models/accessibility_preferences.dart';
 import '../models/insight_summary.dart';
+import 'insights_strings.dart';
 
 /// Builds the one-line plain-language takeaway shown at the top of the
 /// dashboard.
-String buildInsightHeadline(InsightSummary summary) {
+String buildInsightHeadline(
+  InsightSummary summary, {
+  AppLanguage language = AppLanguage.english,
+}) {
+  String t(String key, [Map<String, Object> params = const {}]) =>
+      InsightsStrings.text(language, key, params);
+
   if (summary.isEmpty) {
-    return 'No reports in the last ${summary.range.days} days yet.';
+    return t('headlineNone', {'days': summary.range.days});
   }
 
   final parts = <String>[];
@@ -12,22 +20,25 @@ String buildInsightHeadline(InsightSummary summary) {
   final open = summary.openCount;
   parts.add(
     open == 0
-        ? 'All ${summary.totalReports} reports are resolved.'
-        : '$open of ${summary.totalReports} reports are still open.',
+        ? t('headlineAllResolved', {'total': summary.totalReports})
+        : t('headlineOpen', {'open': open, 'total': summary.totalReports}),
   );
 
-  if (summary.criticalOpenCount > 0) {
-    final n = summary.criticalOpenCount;
-    parts.add('$n critical ${n == 1 ? 'issue needs' : 'issues need'} attention.');
+  final critical = summary.criticalOpenCount;
+  if (critical > 0) {
+    parts.add(
+      critical == 1
+          ? t('headlineCriticalOne')
+          : t('headlineCriticalMany', {'n': critical}),
+    );
   }
 
   if (summary.topIssueTypes.isNotEmpty) {
-    parts.add('Most reported: ${summary.topIssueTypes.first.label}.');
+    parts.add(t('headlineMost', {'issue': summary.topIssueTypes.first.label}));
   }
 
   return parts.join(' ');
 }
-
 /// Whole days since the oldest open report, or null when nothing is open.
 int? oldestOpenDays(InsightSummary summary, {DateTime? now}) {
   final oldest = summary.oldestOpenAt;

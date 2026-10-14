@@ -6,14 +6,18 @@ import '../../../models/community_report.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/equal_ride_background.dart';
 import '../services/insights_service.dart';
+import '../services/place_name_resolver.dart';
 import '../widgets/insight_states.dart';
 import '../widgets/live_hotspot_map.dart';
 
 /// Full-screen, pannable version of the live hotspot map.
 class InsightsMapPage extends StatefulWidget {
-  const InsightsMapPage({super.key, this.service});
+  const InsightsMapPage({super.key, this.service, this.places});
 
   final InsightsService? service;
+
+  /// Shared with the dashboard so names found there are reused.
+  final PlaceNameResolver? places;
 
   @override
   State<InsightsMapPage> createState() => _InsightsMapPageState();
@@ -70,6 +74,7 @@ class _InsightsMapPageState extends State<InsightsMapPage> {
         reports: reports,
         lastUpdated: _updated,
         expanded: true,
+        places: widget.places,
       );
     }
 

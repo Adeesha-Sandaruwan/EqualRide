@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import '../../../models/community_report.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/equal_ride_background.dart';
+import '../../../models/accessibility_preferences.dart';
 import '../models/insight_summary.dart';
 import '../services/insight_headline.dart';
 import '../services/insights_calculator.dart';
 import '../services/insights_service.dart';
+import '../services/insights_strings.dart';
+import '../services/place_name_resolver.dart';
 import '../widgets/hotspot_list.dart';
 import '../widgets/insight_palette.dart';
 import '../widgets/insight_states.dart';
@@ -17,15 +20,26 @@ import '../widgets/kpi_card.dart';
 import '../widgets/live_hotspot_map.dart';
 import 'insights_map_page.dart';
 import '../widgets/range_selector.dart';
+import '../widgets/share_summary_sheet.dart';
 import '../widgets/trend_chart.dart';
 
 /// Analytics view of accessibility conditions. Unlike Community Reports it
 /// shows no individual reports: only totals, trends and ranked hotspots.
 class InsightsDashboardPage extends StatefulWidget {
-  const InsightsDashboardPage({super.key, this.service});
+  const InsightsDashboardPage({
+    super.key,
+    this.service,
+    this.places,
+    this.language = AppLanguage.english,
+  });
+
+  final AppLanguage language;
 
   /// Injectable for tests. Defaults to the live Firestore-backed service.
   final InsightsService? service;
+
+  /// Injectable for tests. Defaults to the live place-name lookup.
+  final PlaceNameResolver? places;
 
   @override
   State<InsightsDashboardPage> createState() => _InsightsDashboardPageState();
@@ -33,6 +47,10 @@ class InsightsDashboardPage extends StatefulWidget {
 
 class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
   late final InsightsService _service = widget.service ?? InsightsService();
+  late final PlaceNameResolver _places =
+      widget.places ?? (_ownedPlaces = PlaceNameResolver());
+  PlaceNameResolver? _ownedPlaces;
+  String _lastLookupKey = '';
 
   StreamSubscription<List<CommunityReport>>? _subscription;
   List<CommunityReport>? _reports;
@@ -43,12 +61,19 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
   @override
   void initState() {
     super.initState();
+    _places.addListener(_onPlacesChanged);
     _subscribe();
+  }
+
+  void _onPlacesChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
+    _places.removeListener(_onPlacesChanged);
+    _ownedPlaces?.dispose();
     super.dispose();
   }
 
@@ -77,6 +102,26 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
     await Future<void>.delayed(const Duration(milliseconds: 600));
   }
 
+  /// Names the coordinate-only hotspots. Runs once per distinct set of labels.
+  void _lookUpPlaceNames(InsightSummary summary) {
+    final labels = summary.topHotspots.map((e) => e.label).toList();
+    final key = labels.join('|');
+    if (key == _lastLookupKey) return;
+    _lastLookupKey = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_places.resolve(labels));
+    });
+  }
+
+  String _t(String key, [Map<String, Object> params = const {}]) =>
+      InsightsStrings.text(widget.language, key, params);
+
+  InsightSummary? get _summary {
+    final reports = _reports;
+    if (reports == null || reports.isEmpty) return null;
+    return InsightsCalculator.summarize(reports, range: _range);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,7 +137,20 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(20),
                   children: [
-                    _Header(onBack: () => Navigator.of(context).maybePop()),
+                    _Header(
+                      title: _t('title'),
+                      backLabel: _t('back'),
+                      shareLabel: _t('share'),
+                      onBack: () => Navigator.of(context).maybePop(),
+                      onShare: _summary == null
+                          ? null
+                          : () => showShareSummarySheet(
+                                context,
+                                summary: _summary!,
+                                language: widget.language,
+                                nameOf: _places.display,
+                              ),
+                    ),
                     const SizedBox(height: 16),
                     ..._body(),
                   ],
@@ -118,81 +176,86 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
 
     final summary = InsightsCalculator.summarize(reports, range: _range);
     final backlogDays = oldestOpenDays(summary);
+    _lookUpPlaceNames(summary);
 
     return [
       if (_error != null) ...[
         const _StaleBanner(),
         const SizedBox(height: 12),
       ],
-      _HeadlinePanel(text: buildInsightHeadline(summary)),
+      _HeadlinePanel(text: buildInsightHeadline(summary, language: widget.language)),
       const SizedBox(height: 16),
       RangeSelector(
         selected: _range,
         onChanged: (range) => setState(() => _range = range),
       ),
       const SizedBox(height: 20),
-      const _SectionTitle('Overview'),
+      _SectionTitle(_t('overview')),
       const SizedBox(height: 12),
       _KpiGrid(
         children: [
           KpiCard(
             icon: Icons.flag_rounded,
-            label: 'Total reports',
+            label: _t('totalReports'),
             value: summary.totalReports,
-            caption: '${summary.busCount} bus · ${summary.roadCount} road',
+            caption: _t('busRoad', {'bus': summary.busCount, 'road': summary.roadCount}),
           ),
           KpiCard(
             icon: Icons.check_circle_rounded,
-            label: 'Resolved',
+            label: _t('resolved'),
             value: summary.resolutionRate * 100,
             suffix: '%',
-            caption: '${summary.resolvedCount} resolved',
+            caption: _t('resolvedCount', {'n': summary.resolvedCount}),
             accent: InsightPalette.good,
           ),
           KpiCard(
             icon: Icons.priority_high_rounded,
-            label: 'Critical open',
+            label: _t('criticalOpen'),
             value: summary.criticalOpenCount,
-            caption: 'Block access fully',
+            caption: _t('blockAccess'),
             accent: InsightPalette.critical,
           ),
           KpiCard(
             icon: Icons.schedule_rounded,
-            label: 'Oldest open',
+            label: _t('oldestOpen'),
             value: backlogDays ?? 0,
             suffix: backlogDays == null ? '' : ' d',
-            caption: backlogDays == null ? 'Nothing open' : 'Backlog age',
+            caption: backlogDays == null ? _t('nothingOpen') : _t('backlogAge'),
             accent: InsightPalette.moderate,
           ),
         ],
       ),
       const SizedBox(height: 24),
-      const _SectionTitle('Live hotspot map'),
+      _SectionTitle(_t('liveMapTitle')),
       const SizedBox(height: 12),
       LiveHotspotMap(
         reports: reports,
         lastUpdated: _updatedAt,
+        places: _places,
         onExpand: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => InsightsMapPage(service: widget.service),
+            builder: (_) => InsightsMapPage(
+              service: widget.service,
+              places: _places,
+            ),
           ),
         ),
       ),
       const SizedBox(height: 24),
-      const _SectionTitle('Most reported issues'),
+      _SectionTitle(_t('topIssues')),
       const SizedBox(height: 12),
       IssueBarChart(entries: summary.topIssueTypes),
       const SizedBox(height: 24),
-      const _SectionTitle('Problem hotspots'),
+      _SectionTitle(_t('hotspots')),
       const SizedBox(height: 4),
-      const Text(
-        'Routes and places ranked by the severity of open problems.',
-        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+      Text(
+        _t('hotspotsHint'),
+        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
       ),
       const SizedBox(height: 12),
-      HotspotList(entries: summary.topHotspots),
+      HotspotList(entries: summary.topHotspots, nameOf: _places.display),
       const SizedBox(height: 24),
-      const _SectionTitle('Trend'),
+      _SectionTitle(_t('trend')),
       const SizedBox(height: 12),
       TrendChart(points: summary.trend),
       const SizedBox(height: 12),
@@ -201,16 +264,26 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.onBack});
+  const _Header({
+    required this.title,
+    required this.backLabel,
+    required this.shareLabel,
+    required this.onBack,
+    required this.onShare,
+  });
 
+  final String title;
+  final String backLabel;
+  final String shareLabel;
   final VoidCallback onBack;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         IconButton(
-          tooltip: 'Back',
+          tooltip: backLabel,
           onPressed: onBack,
           icon: const Icon(Icons.arrow_back_rounded),
         ),
@@ -219,10 +292,15 @@ class _Header extends StatelessWidget {
           child: Semantics(
             header: true,
             child: Text(
-              'Accessibility Insights',
+              title,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
+        ),
+        IconButton(
+          tooltip: shareLabel,
+          onPressed: onShare,
+          icon: const Icon(Icons.ios_share_rounded),
         ),
       ],
     );

@@ -284,7 +284,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 24),
-              const InsightsEntryCard(),
+              InsightsEntryCard(language: widget.preferences.language),
               const SizedBox(height: 24),
               const _StatusCard(),
             ],

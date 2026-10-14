@@ -8,6 +8,7 @@ import '../../../models/community_report.dart';
 import '../../../theme/app_theme.dart';
 import '../models/geo_report.dart';
 import '../services/hotspot_clusterer.dart';
+import '../services/place_name_resolver.dart';
 import '../services/report_geo_resolver.dart';
 import 'insight_palette.dart';
 
@@ -21,6 +22,7 @@ class LiveHotspotMap extends StatefulWidget {
     this.expanded = false,
     this.onExpand,
     this.resolver,
+    this.places,
     this.showTiles = true,
   });
 
@@ -31,6 +33,9 @@ class LiveHotspotMap extends StatefulWidget {
   final bool expanded;
   final VoidCallback? onExpand;
   final ReportGeoResolver? resolver;
+
+  /// Shared place-name lookup. A private one is created when omitted.
+  final PlaceNameResolver? places;
 
   /// Disabled in tests so no network tiles are requested.
   final bool showTiles;
@@ -44,6 +49,9 @@ class _LiveHotspotMapState extends State<LiveHotspotMap> {
 
   late final ReportGeoResolver _resolver =
       widget.resolver ?? ReportGeoResolver();
+  late final PlaceNameResolver _places =
+      widget.places ?? (_ownedPlaces = PlaceNameResolver());
+  PlaceNameResolver? _ownedPlaces;
   final MapController _controller = MapController();
 
   List<GeoReport> _resolved = const [];
@@ -68,6 +76,7 @@ class _LiveHotspotMapState extends State<LiveHotspotMap> {
   @override
   void dispose() {
     _generation++;
+    _ownedPlaces?.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -295,13 +304,18 @@ class _LiveHotspotMapState extends State<LiveHotspotMap> {
   }
 
   void _showCluster(HotspotCluster cluster) {
+    unawaited(_places.resolve([cluster.label]));
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF10202B),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _ClusterSheet(cluster: cluster, color: _colorFor(cluster)),
+      builder: (_) => _ClusterSheet(
+        cluster: cluster,
+        color: _colorFor(cluster),
+        places: _places,
+      ),
     );
   }
 }
@@ -441,10 +455,15 @@ class _ClusterPin extends StatelessWidget {
 }
 
 class _ClusterSheet extends StatelessWidget {
-  const _ClusterSheet({required this.cluster, required this.color});
+  const _ClusterSheet({
+    required this.cluster,
+    required this.color,
+    required this.places,
+  });
 
   final HotspotCluster cluster;
   final Color color;
+  final PlaceNameResolver places;
 
   @override
   Widget build(BuildContext context) {
@@ -469,9 +488,12 @@ class _ClusterSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    cluster.label,
-                    style: Theme.of(context).textTheme.titleLarge,
+                  child: ListenableBuilder(
+                    listenable: places,
+                    builder: (_, _) => Text(
+                      places.display(cluster.label),
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                   ),
                 ),
               ],
