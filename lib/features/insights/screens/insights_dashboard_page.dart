@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../../../models/community_report.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/equal_ride_background.dart';
-import '../../../widgets/glass_panel.dart';
 import '../models/insight_summary.dart';
 import '../services/insight_headline.dart';
 import '../services/insights_calculator.dart';
@@ -15,6 +14,8 @@ import '../widgets/insight_palette.dart';
 import '../widgets/insight_states.dart';
 import '../widgets/issue_bar_chart.dart';
 import '../widgets/kpi_card.dart';
+import '../widgets/live_hotspot_map.dart';
+import 'insights_map_page.dart';
 import '../widgets/range_selector.dart';
 import '../widgets/trend_chart.dart';
 
@@ -35,6 +36,7 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
 
   StreamSubscription<List<CommunityReport>>? _subscription;
   List<CommunityReport>? _reports;
+  DateTime? _updatedAt;
   Object? _error;
   InsightRange _range = InsightRange.days30;
 
@@ -59,6 +61,7 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
         if (!mounted) return;
         setState(() {
           _reports = reports;
+          _updatedAt = DateTime.now();
           _error = null;
         });
       },
@@ -166,7 +169,15 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
       const SizedBox(height: 24),
       const _SectionTitle('Live hotspot map'),
       const SizedBox(height: 12),
-      const _MapPlaceholder(),
+      LiveHotspotMap(
+        reports: reports,
+        lastUpdated: _updatedAt,
+        onExpand: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => InsightsMapPage(service: widget.service),
+          ),
+        ),
+      ),
       const SizedBox(height: 24),
       const _SectionTitle('Most reported issues'),
       const SizedBox(height: 12),
@@ -331,36 +342,5 @@ class _KpiGrid extends StatelessWidget {
       );
     }
     return Column(children: rows);
-  }
-}
-
-/// Reserved space for the live map added in the next step.
-class _MapPlaceholder extends StatelessWidget {
-  const _MapPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const GlassPanel(
-      child: Column(
-        children: [
-          Icon(Icons.map_rounded, color: AppTheme.teal, size: 40),
-          SizedBox(height: 12),
-          Text(
-            'Hotspot map coming next',
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            'Live accessibility conditions will appear here as '
-            'colour-coded hotspots.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppTheme.textSecondary, height: 1.4),
-          ),
-        ],
-      ),
-    );
   }
 }
