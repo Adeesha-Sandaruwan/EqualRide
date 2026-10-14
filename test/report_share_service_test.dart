@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:equal_ride/models/community_report.dart';
-import 'package:equal_ride/services/report_share_service.dart';
+import 'package:equal_drive/models/community_report.dart';
+import 'package:equal_drive/services/report_share_service.dart';
 
 void main() {
   final busReport = CommunityReport(

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:equal_ride/models/community_report.dart';
-import 'package:equal_ride/utils/report_sort_order.dart';
+import 'package:equal_drive/models/community_report.dart';
+import 'package:equal_drive/utils/report_sort_order.dart';
 
 CommunityReport _makeReport({
   required String id,
@@ -54,7 +54,12 @@ void main() {
   test('newest first puts newer date before older', () {
     final sorted = sortReports([...reports], ReportSortOrder.newest);
     expect(sorted.first.id, 'b');
-    expect(sorted.last.id, 'a');
+    // Reports without a date are placed last.
+    expect(sorted.last.id, 'c');
+    expect(
+      sorted.indexWhere((r) => r.id == 'b'),
+      lessThan(sorted.indexWhere((r) => r.id == 'a')),
+    );
   });
 
   test('oldest first puts older date before newer', () {
@@ -68,14 +73,14 @@ void main() {
   test('mostUpvoted puts highest upvoteCount first', () {
     final sorted = sortReports([...reports], ReportSortOrder.mostUpvoted);
     expect(sorted.first.id, 'b'); // 20 votes
-    expect(sorted[1].id, 'c');   // 10 votes
+    expect(sorted[1].id, 'c'); // 10 votes
     expect(sorted.last.id, 'a'); // 5 votes
   });
 
   test('highestImpact puts Critical before High before Low', () {
     final sorted = sortReports([...reports], ReportSortOrder.highestImpact);
-    expect(sorted.first.id, 'b');  // Critical
-    expect(sorted[1].id, 'c');    // High
+    expect(sorted.first.id, 'b'); // Critical
+    expect(sorted[1].id, 'c'); // High
     expect(sorted.last.id, 'a'); // Low
   });
 
