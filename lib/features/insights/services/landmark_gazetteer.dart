@@ -1,3 +1,9 @@
+// File: landmark_gazetteer.dart
+//
+// Offline lookup table of approximate coordinates for well-known Sri Lankan
+// stations, stops and towns. Lets common report locations appear on the map
+// instantly without any network call.
+
 import '../models/geo_report.dart';
 
 /// Approximate coordinates for well-known Sri Lankan stations, stops and

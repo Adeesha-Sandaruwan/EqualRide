@@ -1,3 +1,9 @@
+// File: place_name_resolver.dart
+//
+// Turns coordinate-style locations ("6.9271, 79.8612") into readable place
+// names via free reverse geocoding (BigDataCloud), with an on-device cache. A
+// ChangeNotifier so lists and map sheets refresh when names arrive.
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -84,15 +90,11 @@ class PlaceNameResolver extends ChangeNotifier {
       final uri = Uri.https(
         'api.bigdatacloud.net',
         '/data/reverse-geocode-client',
-        {
-          'latitude': parts[0],
-          'longitude': parts[1],
-          'localityLanguage': 'en',
-        },
+        {'latitude': parts[0], 'longitude': parts[1], 'localityLanguage': 'en'},
       );
-      final response = await _client.get(uri).timeout(
-            const Duration(seconds: 8),
-          );
+      final response = await _client
+          .get(uri)
+          .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) return null;
 
       final decoded = jsonDecode(response.body);

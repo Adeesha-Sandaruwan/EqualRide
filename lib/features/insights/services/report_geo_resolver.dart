@@ -1,3 +1,9 @@
+// File: report_geo_resolver.dart
+//
+// Finds a map point for each report: parses coordinates in the text, then the
+// landmark gazetteer, then free forward geocoding (cached). Reports that
+// cannot be placed are counted as unmapped.
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -31,8 +37,9 @@ class ReportGeoResolver {
   Map<String, List<double>?>? _cache;
   DateTime? _lastRequestAt;
 
-  static final _coordinatePattern =
-      RegExp(r'(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)');
+  static final _coordinatePattern = RegExp(
+    r'(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)',
+  );
 
   /// Parses a "6.93500, 79.85000" style location, or returns null.
   static GeoPoint? parseCoordinates(String location) {
@@ -72,11 +79,7 @@ class ReportGeoResolver {
       );
     }
 
-    return GeoReport(
-      report: report,
-      point: null,
-      source: GeoSource.unresolved,
-    );
+    return GeoReport(report: report, point: null, source: GeoSource.unresolved);
   }
 
   /// Resolves every report. Each distinct unresolved location is looked up
@@ -160,10 +163,12 @@ class ReportGeoResolver {
         'countrycodes': 'lk',
       });
 
-      final response = await _client.get(
-        uri,
-        headers: {'User-Agent': _userAgent, 'Accept-Language': 'en'},
-      ).timeout(const Duration(seconds: 8));
+      final response = await _client
+          .get(
+            uri,
+            headers: {'User-Agent': _userAgent, 'Accept-Language': 'en'},
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (response.statusCode != 200) return const _GeocodeResult.failed();
 
@@ -229,12 +234,8 @@ class ReportGeoResolver {
 /// retried later; a confirmed "not found" is cached to avoid repeat calls.
 class _GeocodeResult {
   const _GeocodeResult.found(GeoPoint this.point) : failed = false;
-  const _GeocodeResult.notFound()
-      : point = null,
-        failed = false;
-  const _GeocodeResult.failed()
-      : point = null,
-        failed = true;
+  const _GeocodeResult.notFound() : point = null, failed = false;
+  const _GeocodeResult.failed() : point = null, failed = true;
 
   final GeoPoint? point;
   final bool failed;

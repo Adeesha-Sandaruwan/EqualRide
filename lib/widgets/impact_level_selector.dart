@@ -1,3 +1,8 @@
+// File: impact_level_selector.dart
+//
+// Access-impact selector for report forms: four colour-coded tiles with icons
+// (Low to Critical) and a description box that follows the selection.
+
 import 'package:flutter/material.dart';
 
 import '../models/community_report.dart';

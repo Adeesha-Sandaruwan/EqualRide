@@ -1,3 +1,9 @@
+// File: incident_photo_service.dart
+//
+// Picks an incident photo (camera or gallery), shrinks it, and base64-encodes
+// it for Firestore. Rejects photos too large for a document and safely
+// decodes stored photos for display.
+
 import 'dart:convert';
 import 'dart:typed_data';
 

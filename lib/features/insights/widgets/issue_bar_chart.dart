@@ -1,3 +1,8 @@
+// File: issue_bar_chart.dart
+//
+// Horizontal bar chart of the most reported issue types, coloured by severity
+// share.
+
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
@@ -24,7 +29,9 @@ class IssueBarChart extends StatelessWidget {
       );
     }
 
-    final maxCount = entries.map((e) => e.count).reduce((a, b) => a > b ? a : b);
+    final maxCount = entries
+        .map((e) => e.count)
+        .reduce((a, b) => a > b ? a : b);
 
     return GlassPanel(
       child: Column(
@@ -55,7 +62,8 @@ class _IssueBar extends StatelessWidget {
     final fraction = maxCount == 0 ? 0.0 : entry.count / maxCount;
 
     return Semantics(
-      label: '$rank. ${entry.label}: ${entry.count} reports, '
+      label:
+          '$rank. ${entry.label}: ${entry.count} reports, '
           '${entry.openCount} still open',
       excludeSemantics: true,
       child: Column(

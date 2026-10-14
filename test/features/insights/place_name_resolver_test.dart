@@ -1,3 +1,7 @@
+// File: place_name_resolver_test.dart
+//
+// Tests for turning coordinates into readable place names and caching them.
+
 import 'dart:convert';
 
 import 'package:equal_drive/features/insights/services/place_name_resolver.dart';
@@ -30,35 +34,36 @@ void main() {
     expect(PlaceNameResolver.formatPlaceName({'locality': ' '}), isNull);
   });
 
-  test('replaces coordinate labels with names and leaves text labels alone',
-      () async {
-    var calls = 0;
-    final resolver = PlaceNameResolver(
-      client: MockClient((request) async {
-        calls++;
-        expect(request.url.queryParameters['latitude'], '6.9331');
-        return http.Response(
-          jsonEncode({'locality': 'Maradana', 'city': 'Colombo'}),
-          200,
-        );
-      }),
-    );
+  test(
+    'replaces coordinate labels with names and leaves text labels alone',
+    () async {
+      var calls = 0;
+      final resolver = PlaceNameResolver(
+        client: MockClient((request) async {
+          calls++;
+          expect(request.url.queryParameters['latitude'], '6.9331');
+          return http.Response(
+            jsonEncode({'locality': 'Maradana', 'city': 'Colombo'}),
+            200,
+          );
+        }),
+      );
 
-    const coords = '6.933066, 79.894205';
-    expect(resolver.display(coords), coords);
+      const coords = '6.933066, 79.894205';
+      expect(resolver.display(coords), coords);
 
-    await resolver.resolve([coords, 'Bus 138', 'Fort Station']);
-    expect(resolver.display(coords), 'Maradana, Colombo');
-    expect(resolver.display('Bus 138'), 'Bus 138');
-    expect(resolver.display('Fort Station'), 'Fort Station');
-    expect(calls, 1);
+      await resolver.resolve([coords, 'Bus 138', 'Fort Station']);
+      expect(resolver.display(coords), 'Maradana, Colombo');
+      expect(resolver.display('Bus 138'), 'Bus 138');
+      expect(resolver.display('Fort Station'), 'Fort Station');
+      expect(calls, 1);
 
-    await resolver.resolve([coords]);
-    expect(calls, 1);
-  });
+      await resolver.resolve([coords]);
+      expect(calls, 1);
+    },
+  );
 
-  test('keeps coordinates when the lookup fails and does not retry',
-      () async {
+  test('keeps coordinates when the lookup fails and does not retry', () async {
     var calls = 0;
     final resolver = PlaceNameResolver(
       client: MockClient((_) async {

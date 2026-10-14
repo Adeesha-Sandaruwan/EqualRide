@@ -1,3 +1,9 @@
+// File: live_hotspot_map.dart
+//
+// Live OpenStreetMap view of report hotspots: colour-coded numbered pins
+// (red/orange/yellow/teal/blue/green), pulsing LIVE badge, scope and time
+// filters, legend with counts and a tap-for-details bottom sheet.
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -124,8 +130,9 @@ class _LiveHotspotMapState extends State<LiveHotspotMap> {
 
   void _recentre(List<HotspotCluster> clusters) {
     if (!_mapReady || clusters.isEmpty) return;
-    final points =
-        clusters.map((c) => LatLng(c.latitude, c.longitude)).toList();
+    final points = clusters
+        .map((c) => LatLng(c.latitude, c.longitude))
+        .toList();
     if (points.length == 1) {
       _controller.move(points.first, 14);
       return;
@@ -464,9 +471,7 @@ class _ClusterPin extends StatelessWidget {
             shape: BoxShape.circle,
             color: color,
             border: Border.all(color: Colors.white, width: 2.5),
-            boxShadow: const [
-              BoxShadow(color: Colors.black38, blurRadius: 6),
-            ],
+            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 6)],
           ),
           alignment: Alignment.center,
           child: Text(
@@ -513,7 +518,10 @@ class _ClusterSheet extends StatelessWidget {
                 Container(
                   width: 14,
                   height: 14,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -531,7 +539,10 @@ class _ClusterSheet extends StatelessWidget {
             _SheetRow(label: 'Reports in this area', value: '${cluster.count}'),
             _SheetRow(label: 'Still open', value: '$open'),
             _SheetRow(label: 'Most common issue', value: cluster.topIssue),
-            _SheetRow(label: 'Severity score', value: '${cluster.openSeverity}'),
+            _SheetRow(
+              label: 'Severity score',
+              value: '${cluster.openSeverity}',
+            ),
             if (latest != null)
               _SheetRow(label: 'Latest report', value: _ago(latest)),
           ],
@@ -618,7 +629,11 @@ class _LiveBadgeState extends State<_LiveBadge>
           children: [
             FadeTransition(
               opacity: Tween<double>(begin: 0.3, end: 1).animate(_pulse),
-              child: const Icon(Icons.circle, size: 10, color: Color(0xFFFF4D4D)),
+              child: const Icon(
+                Icons.circle,
+                size: 10,
+                color: Color(0xFFFF4D4D),
+              ),
             ),
             const SizedBox(width: 6),
             const Text(

@@ -1,3 +1,8 @@
+// File: insights_map_page.dart
+//
+// Full-screen version of the live hotspot map, opened from the dashboard.
+// Shares the place-name resolver with the dashboard so names are cached once.
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -66,7 +71,10 @@ class _InsightsMapPageState extends State<InsightsMapPage> {
 
     Widget body;
     if (reports == null && _error != null) {
-      body = InsightsErrorState(message: _error.toString(), onRetry: _subscribe);
+      body = InsightsErrorState(
+        message: _error.toString(),
+        onRetry: _subscribe,
+      );
     } else if (reports == null) {
       body = const Center(child: CircularProgressIndicator());
     } else {

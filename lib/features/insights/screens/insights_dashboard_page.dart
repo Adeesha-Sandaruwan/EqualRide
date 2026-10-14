@@ -1,3 +1,10 @@
+// File: insights_dashboard_page.dart
+//
+// Insights dashboard screen (reached from the Home banner). Shows the
+// headline, KPI cards, trend chart, top issues, problem hotspots with place
+// names, the live map preview and the share action. Read-only: it never
+// writes reports.
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -145,11 +152,11 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
                       onShare: _summary == null
                           ? null
                           : () => showShareSummarySheet(
-                                context,
-                                summary: _summary!,
-                                language: widget.language,
-                                nameOf: _places.display,
-                              ),
+                              context,
+                              summary: _summary!,
+                              language: widget.language,
+                              nameOf: _places.display,
+                            ),
                     ),
                     const SizedBox(height: 16),
                     ..._body(),
@@ -179,11 +186,10 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
     _lookUpPlaceNames(summary);
 
     return [
-      if (_error != null) ...[
-        const _StaleBanner(),
-        const SizedBox(height: 12),
-      ],
-      _HeadlinePanel(text: buildInsightHeadline(summary, language: widget.language)),
+      if (_error != null) ...[const _StaleBanner(), const SizedBox(height: 12)],
+      _HeadlinePanel(
+        text: buildInsightHeadline(summary, language: widget.language),
+      ),
       const SizedBox(height: 16),
       RangeSelector(
         selected: _range,
@@ -198,7 +204,10 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
             icon: Icons.flag_rounded,
             label: _t('totalReports'),
             value: summary.totalReports,
-            caption: _t('busRoad', {'bus': summary.busCount, 'road': summary.roadCount}),
+            caption: _t('busRoad', {
+              'bus': summary.busCount,
+              'road': summary.roadCount,
+            }),
           ),
           KpiCard(
             icon: Icons.check_circle_rounded,
@@ -234,10 +243,8 @@ class _InsightsDashboardPageState extends State<InsightsDashboardPage> {
         places: _places,
         onExpand: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => InsightsMapPage(
-              service: widget.service,
-              places: _places,
-            ),
+            builder: (_) =>
+                InsightsMapPage(service: widget.service, places: _places),
           ),
         ),
       ),

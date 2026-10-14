@@ -1,3 +1,7 @@
+// File: insights_calculator_test.dart
+//
+// Tests for the Insights summary calculation (buckets, rankings, trend).
+
 import 'package:equal_drive/features/insights/models/insight_summary.dart';
 import 'package:equal_drive/features/insights/services/insights_calculator.dart';
 import 'package:equal_drive/models/community_report.dart';
@@ -69,10 +73,11 @@ void main() {
 
   test('range excludes older reports but oldest open ignores the range', () {
     final old = now.subtract(const Duration(days: 60));
-    final summary = InsightsCalculator.summarize([
-      report(id: 'new'),
-      report(id: 'old', createdAt: old),
-    ], range: InsightRange.days7, now: now);
+    final summary = InsightsCalculator.summarize(
+      [report(id: 'new'), report(id: 'old', createdAt: old)],
+      range: InsightRange.days7,
+      now: now,
+    );
 
     expect(summary.totalReports, 1);
     expect(summary.oldestOpenAt, old);
@@ -124,11 +129,15 @@ void main() {
   });
 
   test('trend buckets reports per day, oldest first', () {
-    final summary = InsightsCalculator.summarize([
-      report(id: '1'),
-      report(id: '2'),
-      report(id: '3', createdAt: now.subtract(const Duration(days: 2))),
-    ], range: InsightRange.days7, now: now);
+    final summary = InsightsCalculator.summarize(
+      [
+        report(id: '1'),
+        report(id: '2'),
+        report(id: '3', createdAt: now.subtract(const Duration(days: 2))),
+      ],
+      range: InsightRange.days7,
+      now: now,
+    );
 
     expect(summary.trend, hasLength(7));
     expect(summary.trend.last.count, 2);

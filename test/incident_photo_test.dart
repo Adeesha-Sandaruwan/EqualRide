@@ -1,3 +1,8 @@
+// File: incident_photo_test.dart
+//
+// Tests for the incident photo feature: base64 encoding and size limits, safe
+// decoding, the CommunityReport photo field, and the photo picker widget.
+
 import 'dart:convert';
 import 'dart:typed_data';
 

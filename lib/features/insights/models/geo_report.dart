@@ -1,3 +1,9 @@
+// File: geo_report.dart
+//
+// Map-ready location types for the Insights feature: GeoPoint (lat/lng),
+// GeoSource (how a report location was resolved) and GeoReport (a community
+// report plus its resolved point).
+
 import '../../../models/community_report.dart';
 
 /// A latitude/longitude pair. Kept local to the insights feature so it does

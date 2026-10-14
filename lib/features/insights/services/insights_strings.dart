@@ -1,3 +1,9 @@
+// File: insights_strings.dart
+//
+// English and Sinhala text for the Insights feature, kept separate from the
+// app-wide strings file to avoid merge conflicts. Missing Sinhala keys fall
+// back to English.
+
 import '../../../models/accessibility_preferences.dart';
 
 /// English and Sinhala text for the Insights feature. Kept separate from the
@@ -44,7 +50,8 @@ class InsightsStrings {
     'liveMapTitle': 'Live hotspot map',
     'topIssues': 'Most reported issues',
     'hotspots': 'Problem hotspots',
-    'hotspotsHint': 'Routes and places ranked by the severity of open problems.',
+    'hotspotsHint':
+        'Routes and places ranked by the severity of open problems.',
     'trend': 'Trend',
     'headlineNone': 'No reports in the last {days} days yet.',
     'headlineAllResolved': 'All {total} reports are resolved.',

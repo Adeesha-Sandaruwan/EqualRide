@@ -1,3 +1,9 @@
+// File: hotspot_clusterer.dart
+//
+// Groups mapped reports into hotspot clusters on a ~0.01 degree grid and
+// applies the map filters (scope, time window, resolved). Also decides each
+// cluster's colour from its worst open report. Pure logic, no UI.
+
 import '../../../models/community_report.dart';
 import '../models/geo_report.dart';
 import 'insights_calculator.dart';
@@ -83,15 +89,16 @@ class HotspotCluster {
       .where(
         (r) => InsightsCalculator.bucketOf(r.status) != ReportBucket.resolved,
       )
-      .fold(0, (sum, r) => sum + InsightsCalculator.severityWeight(r.impactLevel));
+      .fold(
+        0,
+        (sum, r) => sum + InsightsCalculator.severityWeight(r.impactLevel),
+      );
 
   /// Highest severity among unresolved reports; 0 when everything is resolved.
-  int get maxWeight => reports
-      .where(_isOpen)
-      .fold(0, (max, r) {
-        final w = InsightsCalculator.severityWeight(r.impactLevel);
-        return w > max ? w : max;
-      });
+  int get maxWeight => reports.where(_isOpen).fold(0, (max, r) {
+    final w = InsightsCalculator.severityWeight(r.impactLevel);
+    return w > max ? w : max;
+  });
 
   static bool _isOpen(CommunityReport r) =>
       InsightsCalculator.bucketOf(r.status) != ReportBucket.resolved;
@@ -99,10 +106,13 @@ class HotspotCluster {
   /// True when every unresolved report is already being worked on.
   bool get allInProgress =>
       reports.where(_isOpen).isNotEmpty &&
-      reports.where(_isOpen).every(
-        (r) =>
-            InsightsCalculator.bucketOf(r.status) == ReportBucket.inProgress,
-      );
+      reports
+          .where(_isOpen)
+          .every(
+            (r) =>
+                InsightsCalculator.bucketOf(r.status) ==
+                ReportBucket.inProgress,
+          );
 
   /// Most common issue type in this cluster.
   String get topIssue {
@@ -110,8 +120,7 @@ class HotspotCluster {
     for (final r in reports) {
       counts[r.issueType] = (counts[r.issueType] ?? 0) + 1;
     }
-    return (counts.entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value)))
+    return (counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value)))
         .first
         .key;
   }
@@ -126,8 +135,7 @@ class HotspotCluster {
       if (name.isNotEmpty) counts[name] = (counts[name] ?? 0) + 1;
     }
     if (counts.isEmpty) return 'Unnamed place';
-    return (counts.entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value)))
+    return (counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value)))
         .first
         .key;
   }
@@ -165,17 +173,16 @@ class HotspotClusterer {
     }
 
     final clusters = cells.values.map((items) {
-      final lat = items.fold(0.0, (s, i) => s + i.point!.latitude) /
-          items.length;
-      final lng = items.fold(0.0, (s, i) => s + i.point!.longitude) /
-          items.length;
+      final lat =
+          items.fold(0.0, (s, i) => s + i.point!.latitude) / items.length;
+      final lng =
+          items.fold(0.0, (s, i) => s + i.point!.longitude) / items.length;
       return HotspotCluster(
         latitude: lat,
         longitude: lng,
         reports: items.map((i) => i.report).toList(),
       );
-    }).toList()
-      ..sort((a, b) => b.openSeverity.compareTo(a.openSeverity));
+    }).toList()..sort((a, b) => b.openSeverity.compareTo(a.openSeverity));
     return clusters;
   }
 }

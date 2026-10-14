@@ -1,3 +1,7 @@
+// File: hotspot_clusterer_test.dart
+//
+// Tests for hotspot grouping, filters and cluster colours.
+
 import 'package:equal_drive/features/insights/models/geo_report.dart';
 import 'package:equal_drive/features/insights/services/hotspot_clusterer.dart';
 import 'package:equal_drive/models/community_report.dart';
@@ -24,8 +28,11 @@ CommunityReport _report(
   );
 }
 
-GeoReport _at(CommunityReport r, double lat, double lng) =>
-    GeoReport(report: r, point: GeoPoint(lat, lng), source: GeoSource.gazetteer);
+GeoReport _at(CommunityReport r, double lat, double lng) => GeoReport(
+  report: r,
+  point: GeoPoint(lat, lng),
+  source: GeoSource.gazetteer,
+);
 
 void main() {
   final now = DateTime(2026, 5, 1, 12);
@@ -63,7 +70,10 @@ void main() {
     final done = _report('done', status: 'Resolved', now: now);
     final crit = _report('crit', impact: 'Critical', now: now);
 
-    expect(const MapFilter(window: MapWindow.last24h).accepts(old, now), isFalse);
+    expect(
+      const MapFilter(window: MapWindow.last24h).accepts(old, now),
+      isFalse,
+    );
     expect(const MapFilter(window: MapWindow.last7d).accepts(old, now), isTrue);
     expect(const MapFilter(scope: MapScope.road).accepts(bus, now), isFalse);
     expect(const MapFilter(scope: MapScope.bus).accepts(bus, now), isTrue);
@@ -75,8 +85,17 @@ void main() {
 
   test('default filter shows every report, including old and resolved', () {
     const filter = MapFilter();
-    expect(filter.accepts(_report('old', age: const Duration(days: 400), now: now), now), isTrue);
-    expect(filter.accepts(_report('done', status: 'Resolved', now: now), now), isTrue);
+    expect(
+      filter.accepts(
+        _report('old', age: const Duration(days: 400), now: now),
+        now,
+      ),
+      isTrue,
+    );
+    expect(
+      filter.accepts(_report('done', status: 'Resolved', now: now), now),
+      isTrue,
+    );
   });
 
   test('cluster colour ignores resolved reports', () {

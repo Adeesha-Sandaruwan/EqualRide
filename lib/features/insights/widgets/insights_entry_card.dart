@@ -1,3 +1,8 @@
+// File: insights_entry_card.dart
+//
+// Gradient banner on the Home page that opens the Insights dashboard. Styled
+// as analytics so it looks different from the Community Reports entry.
+
 import 'package:flutter/material.dart';
 
 import '../../../models/accessibility_preferences.dart';
@@ -87,10 +92,9 @@ class InsightsEntryCard extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         t('entryTitle'),
-                        style:
-                            Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontSize: 20,
-                                ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleLarge?.copyWith(fontSize: 20),
                       ),
                       const SizedBox(height: 4),
                       Text(

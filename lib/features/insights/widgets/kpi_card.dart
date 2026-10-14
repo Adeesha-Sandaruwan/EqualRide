@@ -1,3 +1,8 @@
+// File: kpi_card.dart
+//
+// Headline number card (icon, label, animated count-up) used in the dashboard
+// summary row.
+
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
@@ -27,7 +32,8 @@ class KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: semanticsLabel ??
+      label:
+          semanticsLabel ??
           '$label: ${_format(value)}$suffix${caption == null ? '' : ', $caption'}',
       excludeSemantics: true,
       child: GlassPanel(

@@ -1,3 +1,7 @@
+// File: range_selector.dart
+//
+// Segmented control for picking the Insights time window (7, 30 or 90 days).
+
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';

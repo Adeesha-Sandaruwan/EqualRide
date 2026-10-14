@@ -1,3 +1,8 @@
+// File: share_summary_sheet.dart
+//
+// Bottom sheet that shares the Insights summary by copying it, or through
+// WhatsApp or email (url_launcher).
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -111,9 +116,7 @@ class ShareSummarySheet extends StatelessWidget {
                 _ShareAction(
                   icon: Icons.chat_rounded,
                   label: 'WhatsApp',
-                  onTap: () => open(
-                    Uri.https('wa.me', '/', {'text': text}),
-                  ),
+                  onTap: () => open(Uri.https('wa.me', '/', {'text': text})),
                 ),
                 _ShareAction(
                   icon: Icons.email_rounded,
@@ -121,10 +124,7 @@ class ShareSummarySheet extends StatelessWidget {
                   onTap: () => open(
                     Uri(
                       scheme: 'mailto',
-                      query: _encode({
-                        'subject': t('title'),
-                        'body': text,
-                      }),
+                      query: _encode({'subject': t('title'), 'body': text}),
                     ),
                   ),
                 ),

@@ -1,3 +1,8 @@
+// File: hotspot_list.dart
+//
+// Ranked "Problem hotspots" list for the dashboard. Shows readable place
+// names (via a name resolver) instead of raw GPS coordinates.
+
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
@@ -34,8 +39,9 @@ class HotspotList extends StatelessWidget {
       );
     }
 
-    final maxSeverity =
-        entries.map((e) => e.severityScore).reduce((a, b) => a > b ? a : b);
+    final maxSeverity = entries
+        .map((e) => e.severityScore)
+        .reduce((a, b) => a > b ? a : b);
 
     return GlassPanel(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -48,7 +54,9 @@ class HotspotList extends StatelessWidget {
               entry: entries[i],
               name: nameOf?.call(entries[i].label) ?? entries[i].label,
               rank: i + 1,
-              share: maxSeverity == 0 ? 0 : entries[i].severityScore / maxSeverity,
+              share: maxSeverity == 0
+                  ? 0
+                  : entries[i].severityScore / maxSeverity,
             ),
           ],
         ],
@@ -75,7 +83,8 @@ class _HotspotRow extends StatelessWidget {
     final color = InsightPalette.forSeverityShare(share);
 
     return Semantics(
-      label: 'Rank $rank, $name. ${entry.openCount} open problems, '
+      label:
+          'Rank $rank, $name. ${entry.openCount} open problems, '
           'severity score ${entry.severityScore}',
       excludeSemantics: true,
       child: Padding(

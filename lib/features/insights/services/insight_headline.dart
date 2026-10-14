@@ -1,4 +1,9 @@
-﻿import '../../../models/accessibility_preferences.dart';
+// File: insight_headline.dart
+//
+// Builds the one-line plain-language takeaway at the top of the dashboard,
+// and the "oldest open report" age in days.
+
+import '../../../models/accessibility_preferences.dart';
 import '../models/insight_summary.dart';
 import 'insights_strings.dart';
 
@@ -39,6 +44,7 @@ String buildInsightHeadline(
 
   return parts.join(' ');
 }
+
 /// Whole days since the oldest open report, or null when nothing is open.
 int? oldestOpenDays(InsightSummary summary, {DateTime? now}) {
   final oldest = summary.oldestOpenAt;

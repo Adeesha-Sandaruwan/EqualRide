@@ -1,3 +1,8 @@
+// File: trend_chart.dart
+//
+// Custom-painted line chart of reports per day, with a text description for
+// screen readers.
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';

@@ -1,3 +1,9 @@
+// File: incident_photo_picker.dart
+//
+// Report-form photo section (take, choose, preview, replace, remove) plus the
+// read-only IncidentPhotoView with tap-to-zoom used on the report detail
+// page.
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';

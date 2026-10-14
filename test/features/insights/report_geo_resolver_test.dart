@@ -1,3 +1,8 @@
+// File: report_geo_resolver_test.dart
+//
+// Tests for resolving report locations to map points (coordinates, gazetteer,
+// geocoding).
+
 import 'dart:convert';
 
 import 'package:equal_drive/features/insights/models/geo_report.dart';
@@ -52,9 +57,11 @@ void main() {
   });
 
   group('resolveLocal', () {
-    final resolver = ReportGeoResolver(client: MockClient((_) async {
-      fail('resolveLocal must not use the network');
-    }));
+    final resolver = ReportGeoResolver(
+      client: MockClient((_) async {
+        fail('resolveLocal must not use the network');
+      }),
+    );
 
     test('reports the source of each match', () {
       expect(
@@ -104,22 +111,25 @@ void main() {
       expect(calls, 1);
     });
 
-    test('keeps unresolved reports and does not cache network errors', () async {
-      var calls = 0;
-      final resolver = ReportGeoResolver(
-        client: MockClient((_) async {
-          calls++;
-          return http.Response('error', 500);
-        }),
-        requestGap: Duration.zero,
-      );
+    test(
+      'keeps unresolved reports and does not cache network errors',
+      () async {
+        var calls = 0;
+        final resolver = ReportGeoResolver(
+          client: MockClient((_) async {
+            calls++;
+            return http.Response('error', 500);
+          }),
+          requestGap: Duration.zero,
+        );
 
-      final first = await resolver.resolveAll([report('Atlantis')]);
-      expect(first.single.isMapped, isFalse);
+        final first = await resolver.resolveAll([report('Atlantis')]);
+        expect(first.single.isMapped, isFalse);
 
-      await resolver.resolveAll([report('Atlantis')]);
-      expect(calls, 2);
-    });
+        await resolver.resolveAll([report('Atlantis')]);
+        expect(calls, 2);
+      },
+    );
 
     test('caches a confirmed not-found result', () async {
       var calls = 0;
@@ -143,10 +153,9 @@ void main() {
         }),
       );
 
-      final results = await resolver.resolveAll(
-        [report('Atlantis')],
-        useNetwork: false,
-      );
+      final results = await resolver.resolveAll([
+        report('Atlantis'),
+      ], useNetwork: false);
       expect(results.single.isMapped, isFalse);
     });
   });

@@ -1,3 +1,9 @@
+// File: share_summary.dart
+//
+// Builds the plain-text summary shared from the dashboard (Copy / WhatsApp /
+// Email). Contains totals and ranked areas only, never individual reports or
+// author details.
+
 import '../../../models/accessibility_preferences.dart';
 import '../models/insight_summary.dart';
 import 'insights_strings.dart';

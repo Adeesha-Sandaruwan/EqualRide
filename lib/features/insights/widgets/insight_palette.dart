@@ -1,3 +1,8 @@
+// File: insight_palette.dart
+//
+// Colour constants for Insights charts and the live map (severity, in
+// progress, resolved), chosen for contrast on the dark background.
+
 import 'package:flutter/material.dart';
 
 /// Colours used across the insights charts. Chosen to keep strong contrast on

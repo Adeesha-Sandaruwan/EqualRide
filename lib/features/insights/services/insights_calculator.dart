@@ -1,3 +1,10 @@
+// File: insights_calculator.dart
+//
+// Pure calculation of an InsightSummary from community reports: status
+// buckets, severity-weighted rankings of issue types and hotspots, daily
+// trend and critical/oldest-open figures. No Firebase access, so it is easy
+// to unit test.
+
 import '../../../models/community_report.dart';
 import '../models/insight_summary.dart';
 
@@ -37,7 +44,11 @@ class InsightsCalculator {
   }) {
     final current = now ?? DateTime.now();
     final today = DateTime(current.year, current.month, current.day);
-    final start = DateTime(today.year, today.month, today.day - (range.days - 1));
+    final start = DateTime(
+      today.year,
+      today.month,
+      today.day - (range.days - 1),
+    );
 
     var pending = 0;
     var inProgress = 0;
@@ -151,21 +162,22 @@ class InsightsCalculator {
     int Function(InsightEntry, InsightEntry) compare, {
     bool onlyOpen = false,
   }) {
-    final entries = source.entries
-        .where((e) => !onlyOpen || e.value.open > 0)
-        .map(
-          (e) => InsightEntry(
-            label: e.key,
-            count: e.value.count,
-            openCount: e.value.open,
-            severityScore: e.value.severity,
-          ),
-        )
-        .toList()
-      ..sort((a, b) {
-        final result = compare(a, b);
-        return result != 0 ? result : a.label.compareTo(b.label);
-      });
+    final entries =
+        source.entries
+            .where((e) => !onlyOpen || e.value.open > 0)
+            .map(
+              (e) => InsightEntry(
+                label: e.key,
+                count: e.value.count,
+                openCount: e.value.open,
+                severityScore: e.value.severity,
+              ),
+            )
+            .toList()
+          ..sort((a, b) {
+            final result = compare(a, b);
+            return result != 0 ? result : a.label.compareTo(b.label);
+          });
 
     return entries.take(_maxEntries).toList();
   }

@@ -1,3 +1,9 @@
+// File: insights_service.dart
+//
+// Thin Firestore stream wrapper for Insights. Watches the existing reports
+// collection read-only and maps each snapshot through InsightsCalculator.
+// Does not add or change any report data.
+
 import '../../../models/community_report.dart';
 import '../../../services/accessibility_report_service.dart';
 import '../models/insight_summary.dart';
@@ -9,8 +15,9 @@ import 'insights_calculator.dart';
 /// it does not change how Community Reports behaves.
 class InsightsService {
   InsightsService({Stream<List<CommunityReport>> Function()? reportsSource})
-      : _reportsSource = reportsSource ??
-            (() => AccessibilityReportService().getReportsStream());
+    : _reportsSource =
+          reportsSource ??
+          (() => AccessibilityReportService().getReportsStream());
 
   final Stream<List<CommunityReport>> Function() _reportsSource;
 

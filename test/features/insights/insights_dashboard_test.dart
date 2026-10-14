@@ -1,3 +1,7 @@
+// File: insights_dashboard_test.dart
+//
+// Widget tests for the Insights dashboard screen states and range switching.
+
 import 'dart:async';
 
 import 'package:equal_drive/features/insights/screens/insights_dashboard_page.dart';

@@ -1,3 +1,7 @@
+// File: insight_states.dart
+//
+// Loading skeleton, error and empty states shown by the Insights dashboard.
+
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
@@ -35,12 +39,12 @@ class _InsightsSkeletonState extends State<InsightsSkeleton>
         builder: (context, _) {
           final alpha = 0.08 + 0.08 * _controller.value;
           Widget block(double height) => Container(
-                height: height,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: alpha),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              );
+            height: height,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: alpha),
+              borderRadius: BorderRadius.circular(20),
+            ),
+          );
 
           return Column(
             children: [

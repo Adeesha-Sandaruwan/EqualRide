@@ -1,3 +1,9 @@
+// File: insight_summary.dart
+//
+// Data models for the Insights dashboard: the time range (7/30/90 days),
+// ranked entries, daily trend points and the aggregated InsightSummary built
+// from community reports.
+
 /// Time window used by the insights dashboard.
 enum InsightRange {
   days7(7),
@@ -56,17 +62,17 @@ class InsightSummary {
   });
 
   const InsightSummary.empty(this.range)
-      : totalReports = 0,
-        pendingCount = 0,
-        inProgressCount = 0,
-        resolvedCount = 0,
-        criticalOpenCount = 0,
-        busCount = 0,
-        roadCount = 0,
-        topIssueTypes = const [],
-        topHotspots = const [],
-        trend = const [],
-        oldestOpenAt = null;
+    : totalReports = 0,
+      pendingCount = 0,
+      inProgressCount = 0,
+      resolvedCount = 0,
+      criticalOpenCount = 0,
+      busCount = 0,
+      roadCount = 0,
+      topIssueTypes = const [],
+      topHotspots = const [],
+      trend = const [],
+      oldestOpenAt = null;
 
   final InsightRange range;
   final int totalReports;
