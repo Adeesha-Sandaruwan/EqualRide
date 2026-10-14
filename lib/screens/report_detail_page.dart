@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models/community_report.dart';
 import '../services/accessibility_report_service.dart';
+import '../services/incident_photo_service.dart';
+import '../widgets/incident_photo_picker.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -415,6 +417,29 @@ class _ReportDetailPageState extends State<ReportDetailPage>
                           ],
                         ),
                       ),
+                      if (IncidentPhotoService.tryDecode(r.incidentPhotoBase64)
+                          case final photo?) ...[
+                        const SizedBox(height: 14),
+                        GlassPanel(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Incident photo',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              IncidentPhotoView(bytes: photo),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 28),
 
                       // ── Mark as helpful button ──

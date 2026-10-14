@@ -23,6 +23,7 @@ class CommunityReport {
     this.busNumber,
     this.category = 'bus',
     this.impactLevel = defaultImpactLevel,
+    this.incidentPhotoBase64,
   });
 
   final String id;
@@ -45,6 +46,9 @@ class CommunityReport {
   // ── Firestore deserialization ────────────────────────────────────────────
   final String impactLevel;
 
+  /// Optional incident photo, stored as plain base64 (JPEG).
+  final String? incidentPhotoBase64;
+
   /// Creates a [CommunityReport] from a Firestore document snapshot.
   factory CommunityReport.fromSnapshot(
       DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -65,8 +69,12 @@ class CommunityReport {
       impactLevel: impactLevelDescriptions.containsKey(data['impactLevel'])
           ? data['impactLevel'] as String
           : defaultImpactLevel,
+      incidentPhotoBase64: _nonEmpty(data['incidentPhotoBase64']),
     );
   }
+
+  static String? _nonEmpty(Object? value) =>
+      value is String && value.isNotEmpty ? value : null;
 
   // ── Firestore serialization ──────────────────────────────────────────────
 
@@ -81,6 +89,8 @@ class CommunityReport {
       'upvoteCount': upvoteCount,
       if (busNumber != null && busNumber!.isNotEmpty) 'busNumber': busNumber,
       'category': category,
+      if (incidentPhotoBase64 != null && incidentPhotoBase64!.isNotEmpty)
+        'incidentPhotoBase64': incidentPhotoBase64,
       // createdAt is intentionally omitted — callers use FieldValue.serverTimestamp()
     };
   }
@@ -99,6 +109,7 @@ class CommunityReport {
     int? upvoteCount,
     String? busNumber,
     String? category,
+    String? incidentPhotoBase64,
   }) {
     return CommunityReport(
       id: id ?? this.id,
@@ -111,6 +122,8 @@ class CommunityReport {
       upvoteCount: upvoteCount ?? this.upvoteCount,
       busNumber: busNumber ?? this.busNumber,
       category: category ?? this.category,
+      impactLevel: impactLevel,
+      incidentPhotoBase64: incidentPhotoBase64 ?? this.incidentPhotoBase64,
     );
   }
 

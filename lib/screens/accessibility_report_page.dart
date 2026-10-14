@@ -1,15 +1,19 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'accessibility_map_location_picker_page.dart';
 import '../models/community_report.dart';
 import '../services/accessibility_report_draft_service.dart';
 import '../services/accessibility_report_service.dart';
+import '../services/incident_photo_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/impact_level_selector.dart';
+import '../widgets/incident_photo_picker.dart';
 import '../widgets/glass_panel.dart';
 
 class AccessibilityReportPage extends StatefulWidget {
@@ -31,6 +35,9 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
 
   String? issueType;
   String impactLevel = CommunityReport.defaultImpactLevel;
+  final photoService = IncidentPhotoService();
+  IncidentPhoto? incidentPhoto;
+  bool isPickingPhoto = false;
   bool isSubmitting = false;
   bool isReviewing = false;
   bool isDraftLoading = true;
@@ -411,6 +418,20 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                                   label: 'WHAT HAPPENED',
                                   value: descriptionController.text,
                                 ),
+                                if (incidentPhoto != null) ...[
+                                  const SizedBox(height: 10),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: SizedBox(
+                                      height: 140,
+                                      width: double.infinity,
+                                      child: Image.memory(
+                                        incidentPhoto!.bytes,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -446,6 +467,23 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
     }
   }
 
+  Future<void> pickPhoto(ImageSource source) async {
+    if (isPickingPhoto) return;
+    setState(() => isPickingPhoto = true);
+    try {
+      final photo = await photoService.pick(source);
+      if (photo != null && mounted) setState(() => incidentPhoto = photo);
+    } on IncidentPhotoException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      if (mounted) setState(() => isPickingPhoto = false);
+    }
+  }
+
   Future<void> submitReport() async {
     if (isSubmitting || isReviewing || isDraftLoading || isDiscardingDraft) {
       return;
@@ -473,6 +511,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
         description: descriptionController.text,
         location: locationController.text,
         impactLevel: impactLevel,
+        incidentPhotoBase64: incidentPhoto?.base64,
       );
 
       if (!mounted) return;
@@ -496,6 +535,7 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
       setState(() {
         issueType = null;
         impactLevel = CommunityReport.defaultImpactLevel;
+        incidentPhoto = null;
         hasSavedDraft = false;
       });
       Navigator.of(context).pop();
@@ -887,6 +927,24 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
                                 }
                                 return null;
                               },
+                            ),
+                            const SizedBox(height: 18),
+                            const _FormSectionHeading(
+                              number: '05',
+                              title: 'Add a photo (optional)',
+                              subtitle:
+                                  'A clear photo helps others and operators see the problem.',
+                              icon: Icons.add_a_photo_outlined,
+                            ),
+                            const SizedBox(height: 12),
+                            IncidentPhotoPicker(
+                              photoBytes: incidentPhoto?.bytes,
+                              enabled: interactionsEnabled,
+                              isBusy: isPickingPhoto,
+                              onCamera: () => pickPhoto(ImageSource.camera),
+                              onGallery: () => pickPhoto(ImageSource.gallery),
+                              onRemove: () =>
+                                  setState(() => incidentPhoto = null),
                             ),
                           ],
                         ),

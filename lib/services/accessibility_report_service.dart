@@ -204,6 +204,7 @@ class AccessibilityReportService {
     required String impactLevel,
     String? busNumber,
     String category = 'bus',
+    String? incidentPhotoBase64,
   }) async {
     final authorId = FirebaseAuth.instance.currentUser?.uid;
 
@@ -222,6 +223,8 @@ class AccessibilityReportService {
         if (busNumber != null && busNumber.trim().isNotEmpty)
           'busNumber': busNumber.trim(),
         'category': category,
+        if (incidentPhotoBase64 != null && incidentPhotoBase64.isNotEmpty)
+          'incidentPhotoBase64': incidentPhotoBase64,
         'createdAt': FieldValue.serverTimestamp(),
         'authorId': authorId,
         'status': 'Pending',
@@ -241,6 +244,7 @@ class AccessibilityReportService {
     required String description,
     required String location,
     required String impactLevel,
+    String? incidentPhotoBase64,
   }) async {
     final authorId = FirebaseAuth.instance.currentUser?.uid;
 
@@ -256,6 +260,8 @@ class AccessibilityReportService {
         'description': description,
         'location': location,
         'impactLevel': impactLevel,
+        if (incidentPhotoBase64 != null && incidentPhotoBase64.isNotEmpty)
+          'incidentPhotoBase64': incidentPhotoBase64,
         'createdAt': FieldValue.serverTimestamp(),
         'authorId': authorId,
         'status': 'Pending',
