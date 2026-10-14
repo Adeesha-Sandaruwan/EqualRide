@@ -8,6 +8,7 @@ import '../../../models/community_report.dart';
 import '../../../theme/app_theme.dart';
 import '../models/geo_report.dart';
 import '../services/hotspot_clusterer.dart';
+import '../services/insights_calculator.dart';
 import '../services/place_name_resolver.dart';
 import '../services/report_geo_resolver.dart';
 import 'insight_palette.dart';
@@ -152,6 +153,13 @@ class _LiveHotspotMapState extends State<LiveHotspotMap> {
     final accepted = widget.reports.where((r) => _filter.accepts(r, now));
     final mappedCount = clusters.fold<int>(0, (s, c) => s + c.count);
     final unmapped = accepted.length - mappedCount;
+    final legendCounts = <Color, int>{};
+    for (final c in clusters) {
+      for (final r in c.reports) {
+        final color = _colorForReport(r);
+        legendCounts[color] = (legendCounts[color] ?? 0) + 1;
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -202,7 +210,7 @@ class _LiveHotspotMapState extends State<LiveHotspotMap> {
           ),
         ),
         const SizedBox(height: 10),
-        const _Legend(),
+        _Legend(counts: legendCounts),
         const SizedBox(height: 6),
         Text(
           _footer(unmapped),
@@ -291,6 +299,7 @@ class _LiveHotspotMapState extends State<LiveHotspotMap> {
 
   static Color _colorFor(HotspotCluster c) {
     if (c.openSeverity == 0) return InsightPalette.good;
+    if (c.allInProgress) return InsightPalette.inProgress;
     switch (c.maxWeight) {
       case 4:
         return InsightPalette.critical;
@@ -299,7 +308,26 @@ class _LiveHotspotMapState extends State<LiveHotspotMap> {
       case 2:
         return InsightPalette.moderate;
       default:
-        return InsightPalette.low;
+        return _lowColor;
+    }
+  }
+
+  static const _lowColor = Color(0xFF4DD0E1);
+
+  /// Colour of a single report, used for the legend counts.
+  static Color _colorForReport(CommunityReport r) {
+    final bucket = InsightsCalculator.bucketOf(r.status);
+    if (bucket == ReportBucket.resolved) return InsightPalette.good;
+    if (bucket == ReportBucket.inProgress) return InsightPalette.inProgress;
+    switch (InsightsCalculator.severityWeight(r.impactLevel)) {
+      case 4:
+        return InsightPalette.critical;
+      case 3:
+        return InsightPalette.high;
+      case 2:
+        return InsightPalette.moderate;
+      default:
+        return _lowColor;
     }
   }
 
@@ -327,6 +355,7 @@ class _FilterBar extends StatelessWidget {
   final ValueChanged<MapFilter> onChanged;
 
   static const _windows = {
+    MapWindow.all: 'All time',
     MapWindow.last24h: '24 h',
     MapWindow.last7d: '7 days',
     MapWindow.last30d: '30 days',
@@ -656,15 +685,19 @@ class _Chip extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend();
+  const _Legend({required this.counts});
+
+  final Map<Color, int> counts;
 
   @override
   Widget build(BuildContext context) {
-    const items = [
+    final items = [
       ('Critical', InsightPalette.critical),
       ('High', InsightPalette.high),
       ('Moderate', InsightPalette.moderate),
-      ('Low / resolved', InsightPalette.low),
+      ('Low', _LiveHotspotMapState._lowColor),
+      ('In progress', InsightPalette.inProgress),
+      ('Resolved', InsightPalette.good),
     ];
     return Wrap(
       spacing: 14,
@@ -681,7 +714,7 @@ class _Legend extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                label,
+                '$label (${counts[color] ?? 0})',
                 style: const TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 12,

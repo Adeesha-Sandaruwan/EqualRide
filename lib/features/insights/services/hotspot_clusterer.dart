@@ -5,22 +5,24 @@ import 'insights_calculator.dart';
 enum MapScope { all, bus, road }
 
 enum MapWindow {
+  all(null),
   last24h(Duration(hours: 24)),
   last7d(Duration(days: 7)),
   last30d(Duration(days: 30));
 
   const MapWindow(this.duration);
 
-  final Duration duration;
+  /// Null means no time limit.
+  final Duration? duration;
 }
 
 /// Filters applied to the live hotspot map only.
 class MapFilter {
   const MapFilter({
     this.scope = MapScope.all,
-    this.window = MapWindow.last7d,
+    this.window = MapWindow.all,
     this.criticalOnly = false,
-    this.includeResolved = false,
+    this.includeResolved = true,
   });
 
   final MapScope scope;
@@ -43,8 +45,9 @@ class MapFilter {
   }
 
   bool accepts(CommunityReport report, DateTime now) {
+    final limit = window.duration;
     final created = report.createdAt;
-    if (created == null || now.difference(created) > window.duration) {
+    if (limit != null && (created == null || now.difference(created) > limit)) {
       return false;
     }
 
@@ -82,12 +85,23 @@ class HotspotCluster {
       )
       .fold(0, (sum, r) => sum + InsightsCalculator.severityWeight(r.impactLevel));
 
-  int get maxWeight => reports.fold(
-        0,
-        (max, r) {
-          final w = InsightsCalculator.severityWeight(r.impactLevel);
-          return w > max ? w : max;
-        },
+  /// Highest severity among unresolved reports; 0 when everything is resolved.
+  int get maxWeight => reports
+      .where(_isOpen)
+      .fold(0, (max, r) {
+        final w = InsightsCalculator.severityWeight(r.impactLevel);
+        return w > max ? w : max;
+      });
+
+  static bool _isOpen(CommunityReport r) =>
+      InsightsCalculator.bucketOf(r.status) != ReportBucket.resolved;
+
+  /// True when every unresolved report is already being worked on.
+  bool get allInProgress =>
+      reports.where(_isOpen).isNotEmpty &&
+      reports.where(_isOpen).every(
+        (r) =>
+            InsightsCalculator.bucketOf(r.status) == ReportBucket.inProgress,
       );
 
   /// Most common issue type in this cluster.

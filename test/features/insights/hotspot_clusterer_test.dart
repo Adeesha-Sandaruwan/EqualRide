@@ -67,10 +67,29 @@ void main() {
     expect(const MapFilter(window: MapWindow.last7d).accepts(old, now), isTrue);
     expect(const MapFilter(scope: MapScope.road).accepts(bus, now), isFalse);
     expect(const MapFilter(scope: MapScope.bus).accepts(bus, now), isTrue);
-    expect(const MapFilter().accepts(done, now), isFalse);
+    expect(const MapFilter(includeResolved: false).accepts(done, now), isFalse);
     expect(const MapFilter(includeResolved: true).accepts(done, now), isTrue);
     expect(const MapFilter(criticalOnly: true).accepts(bus, now), isFalse);
     expect(const MapFilter(criticalOnly: true).accepts(crit, now), isTrue);
+  });
+
+  test('default filter shows every report, including old and resolved', () {
+    const filter = MapFilter();
+    expect(filter.accepts(_report('old', age: const Duration(days: 400), now: now), now), isTrue);
+    expect(filter.accepts(_report('done', status: 'Resolved', now: now), now), isTrue);
+  });
+
+  test('cluster colour ignores resolved reports', () {
+    final cluster = HotspotCluster(
+      latitude: 6.9,
+      longitude: 79.8,
+      reports: [
+        _report('a', impact: 'Critical', status: 'Resolved', now: now),
+        _report('b', impact: 'Moderate', now: now),
+      ],
+    );
+    expect(cluster.maxWeight, 2);
+    expect(cluster.allInProgress, isFalse);
   });
 
   test('cluster label prefers bus number and top issue is most common', () {

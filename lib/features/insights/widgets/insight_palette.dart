@@ -10,6 +10,7 @@ class InsightPalette {
   static const moderate = Color(0xFFFFD166);
   static const low = Color(0xFF7CFFB2);
   static const good = Color(0xFF7CFFB2);
+  static const inProgress = Color(0xFF6C8CFF);
   static const track = Color(0x1FFFFFFF);
 
   static Color forSeverityShare(double share) {
