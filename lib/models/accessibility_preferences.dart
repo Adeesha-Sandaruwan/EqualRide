@@ -8,6 +8,9 @@ class AccessibilityPreferences {
   final bool highContrast;
   final double textScale;
   final AppLanguage language;
+  final bool voiceAssistantEnabled;
+  final bool voiceScreenNarration;
+  final bool voiceSlowSpeech;
 
   const AccessibilityPreferences({
     this.stepFreeRoutes = true,
@@ -17,6 +20,9 @@ class AccessibilityPreferences {
     this.highContrast = false,
     this.textScale = 1.0,
     this.language = AppLanguage.english,
+    this.voiceAssistantEnabled = true,
+    this.voiceScreenNarration = false,
+    this.voiceSlowSpeech = false,
   });
 
   Map<String, dynamic> toMap() => {
@@ -27,6 +33,9 @@ class AccessibilityPreferences {
         'highContrast': highContrast,
         'textScale': textScale,
         'language': language.name,
+        'voiceAssistantEnabled': voiceAssistantEnabled,
+        'voiceScreenNarration': voiceScreenNarration,
+        'voiceSlowSpeech': voiceSlowSpeech,
       };
 
   factory AccessibilityPreferences.fromMap(Map<String, dynamic> map) {
@@ -42,6 +51,37 @@ class AccessibilityPreferences {
       language: map['language'] == 'sinhala'
           ? AppLanguage.sinhala
           : AppLanguage.english,
+      voiceAssistantEnabled: map['voiceAssistantEnabled'] ?? true,
+      voiceScreenNarration: map['voiceScreenNarration'] ?? false,
+      voiceSlowSpeech: map['voiceSlowSpeech'] ?? false,
+    );
+  }
+
+  AccessibilityPreferences copyWith({
+    bool? stepFreeRoutes,
+    bool? lowCrowding,
+    bool? prioritySeating,
+    bool? accessibilityAlerts,
+    bool? highContrast,
+    double? textScale,
+    AppLanguage? language,
+    bool? voiceAssistantEnabled,
+    bool? voiceScreenNarration,
+    bool? voiceSlowSpeech,
+  }) {
+    return AccessibilityPreferences(
+      stepFreeRoutes: stepFreeRoutes ?? this.stepFreeRoutes,
+      lowCrowding: lowCrowding ?? this.lowCrowding,
+      prioritySeating: prioritySeating ?? this.prioritySeating,
+      accessibilityAlerts: accessibilityAlerts ?? this.accessibilityAlerts,
+      highContrast: highContrast ?? this.highContrast,
+      textScale: textScale ?? this.textScale,
+      language: language ?? this.language,
+      voiceAssistantEnabled:
+          voiceAssistantEnabled ?? this.voiceAssistantEnabled,
+      voiceScreenNarration:
+          voiceScreenNarration ?? this.voiceScreenNarration,
+      voiceSlowSpeech: voiceSlowSpeech ?? this.voiceSlowSpeech,
     );
   }
 }

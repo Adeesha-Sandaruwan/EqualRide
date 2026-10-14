@@ -10,7 +10,9 @@ import 'screens/home_page.dart';
 import 'screens/preferences_page.dart';
 import 'services/auth_service.dart';
 import 'services/user_profile_service.dart';
+import 'services/voice_assistant_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/voice_assistant_floating_button.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,13 +32,28 @@ class EqualRideApp extends StatefulWidget {
 }
 
 class _EqualRideAppState extends State<EqualRideApp> {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   AccessibilityPreferences displayPreferences =
       const AccessibilityPreferences();
+
+  @override
+  void initState() {
+    super.initState();
+    final voiceService = VoiceAssistantService.instance;
+    voiceService.navigatorKey = navigatorKey;
+    voiceService.onGetPreferences = () => displayPreferences;
+    voiceService.onUpdatePreferences = (prefs) {
+      updateDisplayPreferences(prefs);
+    };
+    voiceService.initialize();
+  }
 
   void updateDisplayPreferences(AccessibilityPreferences preferences) {
     setState(() {
       displayPreferences = preferences;
     });
+    VoiceAssistantService.instance.syncPreferences(preferences);
   }
 
   ThemeData get appTheme {
@@ -68,6 +85,7 @@ class _EqualRideAppState extends State<EqualRideApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'EqualRide',
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
       darkTheme: appTheme,
@@ -94,7 +112,12 @@ class _EqualRideAppState extends State<EqualRideApp> {
           );
         }
 
-        return app;
+        return Stack(
+          children: [
+            app,
+            const VoiceAssistantFloatingButton(),
+          ],
+        );
       },
       home: AppRouter(
         onPreferencesChanged: updateDisplayPreferences,

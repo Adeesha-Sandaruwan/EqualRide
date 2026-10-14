@@ -55,6 +55,22 @@ class AppStrings {
     'demoNotice':
         'Demo route data — a verified public-transport data source will replace this later.',
     'enterDestination': 'Enter a destination first.',
+    'voiceAssistant': 'Voice Assistant',
+    'voiceAssistantHint': 'Hands-free voice navigation & screen reader',
+    'voiceGuidance': 'Voice & Audio Guidance',
+    'autoScreenNarration': 'Screen narration',
+    'autoScreenNarrationHint': 'Read screen details aloud automatically when opening pages',
+    'slowSpeech': 'Slower speech rate',
+    'slowSpeechHint': 'Speak slower for easier listening (recommended for seniors)',
+    'testVoice': 'Test voice guidance',
+    'testVoiceMessage': 'Hello! EqualRide voice assistant is active and ready to help you travel safely.',
+    'listening': 'Listening...',
+    'speaking': 'Speaking...',
+    'tapToSpeak': 'Tap to speak',
+    'voiceCommandsHelp': 'Voice commands help',
+    'whereAmI': 'Where am I?',
+    'readScreen': 'Read screen',
+    'stopSpeaking': 'Stop speaking',
   };
 
   static const _sinhala = {
@@ -104,5 +120,21 @@ class AppStrings {
     'demoNotice':
         'මෙය නිරූපණ මාර්ග දත්ත වේ — සත්‍යාපිත පොදු ප්‍රවාහන දත්ත පසුව එක් කෙරේ.',
     'enterDestination': 'පළමුව ගමනාන්තයක් ඇතුළත් කරන්න.',
+    'voiceAssistant': 'හඬ සහායකයා',
+    'voiceAssistantHint': 'හඬ මඟින් සැරිසැරීම සහ තිරය කියවීම',
+    'voiceGuidance': 'හඬ සහ ශ්‍රව්‍ය මාර්ගෝපදේශ',
+    'autoScreenNarration': 'තිර විස්තරය',
+    'autoScreenNarrationHint': 'පිටු විවෘත වන විට තිරයේ තොරතුරු ස්වයංක්‍රීයව කියවන්න',
+    'slowSpeech': 'මන්දගාමී හඬ',
+    'slowSpeechHint': 'පැහැදිලිව ඇසීමට හඬ වේගය අඩු කරන්න',
+    'testVoice': 'හඬ පරීක්ෂා කරන්න',
+    'testVoiceMessage': 'ආයුබෝවන්! EqualRide හඬ සහායකයා සූදානම්.',
+    'listening': 'සවන් දෙමින්...',
+    'speaking': 'කථා කරමින්...',
+    'tapToSpeak': 'කථා කිරීමට ඔබන්න',
+    'voiceCommandsHelp': 'හඬ විධාන උපකාර',
+    'whereAmI': 'මම සිටින්නේ කොහේද?',
+    'readScreen': 'තිරය කියවන්න',
+    'stopSpeaking': 'හඬ නවත්වන්න',
   };
 }

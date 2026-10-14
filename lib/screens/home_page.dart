@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
 import '../models/accessibility_preferences.dart';
+import '../services/voice_assistant_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -35,16 +37,165 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final fromController = TextEditingController();
   final destinationController = TextEditingController();
+  final fromFocusNode = FocusNode();
+  final destinationFocusNode = FocusNode();
+  StreamSubscription<String>? _voiceDestinationSub;
 
   @override
   void initState() {
     super.initState();
     fromController.text =
         AppStrings.text(widget.preferences.language, 'currentLocation');
+
+    fromFocusNode.addListener(_onFromFocusChange);
+
+    _voiceDestinationSub = VoiceAssistantService.instance
+        .onVoiceDestinationRequested
+        .listen((dest) {
+      if (mounted) {
+        destinationController.text = dest;
+        setState(() {});
+        findRoute();
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _registerVoiceContext();
+    });
+  }
+
+  void _registerVoiceContext() {
+    final lang = widget.preferences.language;
+    final name = widget.email.split('@').first;
+    VoiceAssistantService.instance.registerScreen(
+      VoiceScreenContext(
+        name: lang == AppLanguage.sinhala ? 'ප්‍රධාන පිටුව' : 'Home',
+        summary: lang == AppLanguage.sinhala
+            ? 'සාදරයෙන් පිළිගනිමු $name. ගමනාන්තය පවසා මාර්ග සෙවිය හැක.'
+            : 'Welcome $name. You can search accessible routes or manage travel preferences.',
+        readContent: () {
+          final from = fromController.text.trim();
+          final to = destinationController.text.trim();
+          if (lang == AppLanguage.sinhala) {
+            return 'EqualRide ප්‍රධාන පිටුව. ආරම්භක ස්ථානය: $from. ගමනාන්තය: ${to.isEmpty ? "ඇතුළත් කර නැත" : to}. "කොළඹට මාර්ග සොයන්න" වැනි විධානයක් පැවසිය හැක.';
+          } else {
+            return 'EqualRide Home screen. Starting point: $from. Destination: ${to.isEmpty ? "not specified" : to}. You can say a destination like "Find route to Pettah" to search.';
+          }
+        },
+        onVoiceCommand: (cmd) async {
+          if (cmd.contains('find route') ||
+              cmd.contains('search route') ||
+              cmd.contains('මාර්ග සොයන්න')) {
+            findRoute();
+            return true;
+          }
+          if (cmd.contains('saved location') || cmd.contains('සුරකින ලද')) {
+            _openSavedLocations();
+            return true;
+          }
+          if (cmd.contains('preference') ||
+              cmd.contains('setting') ||
+              cmd.contains('මනාප')) {
+            widget.onEditPreferences();
+            return true;
+          }
+          if (cmd.contains('report issue') || cmd.contains('ගැටලුවක් වාර්තා')) {
+            widget.onReportAccessibilityIssue();
+            return true;
+          }
+          if (cmd.contains('community') || cmd.contains('ප්‍රජා')) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CommunityReportsPage(),
+              ),
+            );
+            return true;
+          }
+          return false;
+        },
+      ),
+    );
+  }
+
+  void _onFromFocusChange() {
+    if (fromFocusNode.hasFocus) {
+      _clearIfCurrentLocation();
+    } else {
+      if (fromController.text.trim().isEmpty) {
+        fromController.text =
+            AppStrings.text(widget.preferences.language, 'currentLocation');
+        if (mounted) setState(() {});
+      }
+    }
+  }
+
+  bool _isCurrentLocation(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return false;
+    final eng =
+        AppStrings.text(AppLanguage.english, 'currentLocation').toLowerCase();
+    final sinh = AppStrings.text(AppLanguage.sinhala, 'currentLocation');
+    final lower = trimmed.toLowerCase();
+    return lower == eng ||
+        lower == 'your current location' ||
+        trimmed == sinh ||
+        lower == 'current location';
+  }
+
+  void _clearIfCurrentLocation() {
+    if (_isCurrentLocation(fromController.text)) {
+      fromController.clear();
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _resetToCurrentLocation() {
+    fromController.text =
+        AppStrings.text(widget.preferences.language, 'currentLocation');
+    fromFocusNode.unfocus();
+    if (mounted) setState(() {});
+  }
+
+  void _handleFromTextChanged(String value) {
+    final eng = AppStrings.text(AppLanguage.english, 'currentLocation');
+    final sinh = AppStrings.text(AppLanguage.sinhala, 'currentLocation');
+
+    if (value.toLowerCase().contains(eng.toLowerCase()) &&
+        value.trim().toLowerCase() != eng.toLowerCase()) {
+      final clean = value
+          .replaceAll(RegExp(RegExp.escape(eng), caseSensitive: false), '')
+          .trimLeft();
+      fromController.value = TextEditingValue(
+        text: clean,
+        selection: TextSelection.collapsed(offset: clean.length),
+      );
+    } else if (value.contains(sinh) && value.trim() != sinh) {
+      final clean = value.replaceAll(sinh, '').trimLeft();
+      fromController.value = TextEditingValue(
+        text: clean,
+        selection: TextSelection.collapsed(offset: clean.length),
+      );
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.preferences.language != widget.preferences.language) {
+      if (_isCurrentLocation(fromController.text)) {
+        fromController.text =
+            AppStrings.text(widget.preferences.language, 'currentLocation');
+      }
+      _registerVoiceContext();
+    }
   }
 
   @override
   void dispose() {
+    _voiceDestinationSub?.cancel();
+    fromFocusNode.removeListener(_onFromFocusChange);
+    fromFocusNode.dispose();
+    destinationFocusNode.dispose();
     fromController.dispose();
     destinationController.dispose();
     super.dispose();
@@ -68,7 +219,7 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RouteResultsPage(
-          from: from.isEmpty
+          from: from.isEmpty || _isCurrentLocation(from)
               ? AppStrings.text(
                   widget.preferences.language,
                   'currentLocation',
@@ -164,30 +315,69 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     TextField(
                       controller: fromController,
+                      focusNode: fromFocusNode,
                       textCapitalization: TextCapitalization.words,
+                      onTap: _clearIfCurrentLocation,
+                      onChanged: (value) {
+                        _handleFromTextChanged(value);
+                        setState(() {});
+                      },
                       decoration: InputDecoration(
                         labelText: t('from'),
-                        hintText: 'Your current location',
-                        prefixIcon: const Icon(Icons.my_location_rounded),
-                        suffixIcon: IconButton(
-                          tooltip: 'Choose on map',
-                          onPressed: () => _pickOnMap(fromController),
-                          icon: const Icon(Icons.map_rounded),
+                        hintText: t('currentLocation'),
+                        prefixIcon: IconButton(
+                          tooltip: 'Use current location',
+                          icon: const Icon(Icons.my_location_rounded),
+                          onPressed: _resetToCurrentLocation,
+                        ),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (fromController.text.isNotEmpty &&
+                                !_isCurrentLocation(fromController.text))
+                              IconButton(
+                                tooltip: 'Reset to current location',
+                                icon: const Icon(Icons.close_rounded, size: 20),
+                                onPressed: _resetToCurrentLocation,
+                              ),
+                            IconButton(
+                              tooltip: 'Choose on map',
+                              onPressed: () => _pickOnMap(fromController),
+                              icon: const Icon(Icons.map_rounded),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: destinationController,
+                      focusNode: destinationFocusNode,
                       textCapitalization: TextCapitalization.words,
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
                         labelText: t('to'),
                         hintText: t('destination'),
                         prefixIcon: const Icon(Icons.location_on_rounded),
-                        suffixIcon: IconButton(
-                          tooltip: 'Choose on map',
-                          onPressed: () => _pickOnMap(destinationController),
-                          icon: const Icon(Icons.map_rounded),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (destinationController.text.isNotEmpty)
+                              IconButton(
+                                tooltip: 'Clear',
+                                icon: const Icon(Icons.close_rounded, size: 20),
+                                onPressed: () {
+                                  destinationController.clear();
+                                  setState(() {});
+                                },
+                              ),
+                            IconButton(
+                              tooltip: 'Choose on map',
+                              onPressed: () =>
+                                  _pickOnMap(destinationController),
+                              icon: const Icon(Icons.map_rounded),
+                            ),
+                          ],
                         ),
                       ),
                       onSubmitted: (_) => findRoute(),
@@ -307,7 +497,7 @@ class _HomeIcon extends StatelessWidget {
       height: 46,
       width: 46,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.16),
+        color: color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Icon(icon, color: color),
