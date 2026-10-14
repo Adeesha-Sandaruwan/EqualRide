@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
 import '../models/accessibility_preferences.dart';
+import '../services/voice_assistant_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -28,6 +29,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
   late bool highContrast;
   late double textScale;
   late AppLanguage language;
+  late bool voiceAssistantEnabled;
+  late bool voiceScreenNarration;
+  late bool voiceSlowSpeech;
 
   bool isSaving = false;
 
@@ -41,6 +45,24 @@ class _PreferencesPageState extends State<PreferencesPage> {
     highContrast = widget.initialPreferences.highContrast;
     textScale = widget.initialPreferences.textScale;
     language = widget.initialPreferences.language;
+    voiceAssistantEnabled = widget.initialPreferences.voiceAssistantEnabled;
+    voiceScreenNarration = widget.initialPreferences.voiceScreenNarration;
+    voiceSlowSpeech = widget.initialPreferences.voiceSlowSpeech;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        VoiceAssistantService.instance.registerScreen(
+          VoiceScreenContext(
+            name: t('preferences'),
+            summary:
+                'Customise routing preferences, readability, language, and voice assistant.',
+            readContent: () =>
+                'Preferences screen. High contrast is ${highContrast ? "on" : "off"}. Text scale is $textScale. Voice assistant is ${voiceAssistantEnabled ? "enabled" : "disabled"}.',
+          ),
+          announceNow: true,
+        );
+      }
+    });
   }
 
   String t(String key) => AppStrings.text(language, key);
@@ -58,6 +80,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
           highContrast: highContrast,
           textScale: textScale,
           language: language,
+          voiceAssistantEnabled: voiceAssistantEnabled,
+          voiceScreenNarration: voiceScreenNarration,
+          voiceSlowSpeech: voiceSlowSpeech,
         ),
       );
 
@@ -281,6 +306,70 @@ class _PreferencesPageState extends State<PreferencesPage> {
                             ],
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              _SectionTitle(
+                icon: Icons.record_voice_over_rounded,
+                title: t('voiceGuidance'),
+              ),
+              const SizedBox(height: 12),
+              GlassPanel(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    _PreferenceToggle(
+                      icon: Icons.mic_rounded,
+                      title: t('voiceAssistant'),
+                      subtitle: t('voiceAssistantHint'),
+                      value: voiceAssistantEnabled,
+                      onChanged: isSaving
+                          ? null
+                          : (value) =>
+                              setState(() => voiceAssistantEnabled = value),
+                    ),
+                    const _Divider(),
+                    _PreferenceToggle(
+                      icon: Icons.volume_up_rounded,
+                      title: t('autoScreenNarration'),
+                      subtitle: t('autoScreenNarrationHint'),
+                      value: voiceScreenNarration,
+                      onChanged: isSaving
+                          ? null
+                          : (value) =>
+                              setState(() => voiceScreenNarration = value),
+                    ),
+                    const _Divider(),
+                    _PreferenceToggle(
+                      icon: Icons.speed_rounded,
+                      title: t('slowSpeech'),
+                      subtitle: t('slowSpeechHint'),
+                      value: voiceSlowSpeech,
+                      onChanged: isSaving
+                          ? null
+                          : (value) =>
+                              setState(() => voiceSlowSpeech = value),
+                    ),
+                    const _Divider(),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: OutlinedButton.icon(
+                        icon: const Icon(
+                          Icons.play_circle_outline_rounded,
+                          color: AppTheme.teal,
+                        ),
+                        label: Text(
+                          t('testVoice'),
+                          style: const TextStyle(color: AppTheme.teal),
+                        ),
+                        onPressed: () {
+                          VoiceAssistantService.instance
+                              .speak(t('testVoiceMessage'));
+                        },
                       ),
                     ),
                   ],

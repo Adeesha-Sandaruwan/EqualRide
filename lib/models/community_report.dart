@@ -87,6 +87,7 @@ class CommunityReport {
       'authorId': authorId,
       'status': status,
       'upvoteCount': upvoteCount,
+      'impactLevel': impactLevel,
       if (busNumber != null && busNumber!.isNotEmpty) 'busNumber': busNumber,
       'category': category,
       if (incidentPhotoBase64 != null && incidentPhotoBase64!.isNotEmpty)

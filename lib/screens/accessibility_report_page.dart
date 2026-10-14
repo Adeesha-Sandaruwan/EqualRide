@@ -10,6 +10,7 @@ import '../models/community_report.dart';
 import '../services/accessibility_report_draft_service.dart';
 import '../services/accessibility_report_service.dart';
 import '../services/incident_photo_service.dart';
+import '../services/voice_assistant_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/impact_level_selector.dart';
@@ -17,7 +18,14 @@ import '../widgets/incident_photo_picker.dart';
 import '../widgets/glass_panel.dart';
 
 class AccessibilityReportPage extends StatefulWidget {
-  const AccessibilityReportPage({super.key});
+  const AccessibilityReportPage({
+    super.key,
+    this.initialLocation,
+    this.initialIssueType,
+  });
+
+  final String? initialLocation;
+  final String? initialIssueType;
 
   @override
   State<AccessibilityReportPage> createState() =>
@@ -112,7 +120,28 @@ class _AccessibilityReportPageState extends State<AccessibilityReportPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialLocation != null && widget.initialLocation!.isNotEmpty) {
+      locationController.text = widget.initialLocation!;
+    }
+    if (widget.initialIssueType != null) {
+      issueType = widget.initialIssueType;
+    }
     unawaited(restoreDraft());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        VoiceAssistantService.instance.registerScreen(
+          VoiceScreenContext(
+            name: 'Report Accessibility Issue',
+            summary:
+                'Report barriers or accessibility updates to help fellow commuters.',
+            readContent: () =>
+                'Report Accessibility Issue screen. Issue type: ${issueType ?? "not chosen"}. Impact: $impactLevel. Location: ${locationController.text.isEmpty ? "not provided" : locationController.text}. Description: ${descriptionController.text.isEmpty ? "empty" : descriptionController.text}.',
+          ),
+          announceNow: true,
+        );
+      }
+    });
   }
 
   @override

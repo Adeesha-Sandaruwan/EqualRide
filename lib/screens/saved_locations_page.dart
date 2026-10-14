@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/saved_location.dart';
 import '../services/saved_location_service.dart';
+import '../services/voice_assistant_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
@@ -23,6 +24,32 @@ class SavedLocationsPage extends StatefulWidget {
 
 class _SavedLocationsPageState extends State<SavedLocationsPage> {
   final SavedLocationService _locationService = SavedLocationService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        VoiceAssistantService.instance.registerScreen(
+          VoiceScreenContext(
+            name: 'Saved Locations',
+            summary:
+                'Your saved favorite destinations for quick route planning.',
+            readContent: () =>
+                'Saved Locations page. You can choose a saved location or tap add location to save a frequent destination.',
+            onVoiceCommand: (cmd) async {
+              if (cmd.contains('add location') || cmd.contains('new place')) {
+                _showLocationDialog();
+                return true;
+              }
+              return false;
+            },
+          ),
+          announceNow: true,
+        );
+      }
+    });
+  }
 
   Future<void> _showLocationDialog({
     SavedLocation? location,
