@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/insights/widgets/insights_entry_card.dart';
 import '../localization/app_strings.dart';
 import '../models/accessibility_preferences.dart';
 import '../theme/app_theme.dart';
@@ -282,6 +283,8 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
+              const SizedBox(height: 24),
+              const InsightsEntryCard(),
               const SizedBox(height: 24),
               const _StatusCard(),
             ],
