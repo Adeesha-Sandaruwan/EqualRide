@@ -128,6 +128,11 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
   /// Active status filter. null = show all reports.
   String? _activeFilter;
 
+  /// Text entered in the search bar. Empty means no search active.
+  String _searchQuery = '';
+
+  final _searchCtrl = TextEditingController();
+
   static const _filterOptions = ['Pending', 'In Progress', 'Resolved'];
 
   void _retry() => setState(() => _streamKey++);
@@ -156,6 +161,7 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
   @override
   void dispose() {
     _headerAnimCtrl.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -268,6 +274,51 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
               ),
               const SizedBox(height: 14),
 
+              // ── Search bar ──
+              FadeTransition(
+                opacity: _headerFade,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: (v) => setState(() => _searchQuery = v.trim()),
+                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Search reports…',
+                      hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                      prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.textSecondary, size: 20),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              tooltip: 'Clear search',
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                              color: AppTheme.textSecondary,
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.07),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: AppTheme.teal, width: 1.5),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
               // ── Content ──
               Expanded(
                 child: StreamBuilder<List<CommunityReport>>(
@@ -301,6 +352,16 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
                             .where((r) => r.status == _activeFilter)
                             .toList();
 
+                    // Apply search filter
+                    final searched = _searchQuery.isEmpty
+                        ? filtered
+                        : filtered.where((r) {
+                            final q = _searchQuery.toLowerCase();
+                            return r.issueType.toLowerCase().contains(q) ||
+                                r.location.toLowerCase().contains(q) ||
+                                r.description.toLowerCase().contains(q);
+                          }).toList();
+
                     if (filtered.isEmpty) {
                       return _NoFilterResults(
                         filter: _activeFilter!,
@@ -309,13 +370,23 @@ class _CommunityReportsPageState extends State<CommunityReportsPage>
                       );
                     }
 
+                    if (searched.isEmpty) {
+                      return _NoSearchResults(
+                        query: _searchQuery,
+                        onClear: () {
+                          _searchCtrl.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      );
+                    }
+
                     return ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                      itemCount: filtered.length,
+                      itemCount: searched.length,
                       separatorBuilder: (_, __) =>
                           const SizedBox(height: 14),
                       itemBuilder: (context, index) {
-                        final report = filtered[index];
+                        final report = searched[index];
                         return _ReportCard(
                           report: report,
                           animDelay: index,
@@ -453,6 +524,68 @@ class _NoFilterResults extends StatelessWidget {
                 onPressed: onClear,
                 icon: const Icon(Icons.clear_rounded),
                 label: const Text('Clear filter'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  No-search-results state
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _NoSearchResults extends StatelessWidget {
+  const _NoSearchResults({required this.query, required this.onClear});
+
+  final String query;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: GlassPanel(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 64,
+                width: 64,
+                decoration: BoxDecoration(
+                  color: AppTheme.teal.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.search_off_rounded,
+                  color: AppTheme.teal,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No results for "$query"',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Try different keywords or clear\nthe search to see all reports.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onClear,
+                icon: const Icon(Icons.close_rounded),
+                label: const Text('Clear search'),
               ),
             ],
           ),
