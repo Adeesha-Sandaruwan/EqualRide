@@ -23,6 +23,7 @@ class CommunityReport {
     this.busNumber,
     this.category = 'bus',
     this.impactLevel = defaultImpactLevel,
+    this.reporterName,
   });
 
   final String id;
@@ -45,6 +46,21 @@ class CommunityReport {
   // ── Firestore deserialization ────────────────────────────────────────────
   final String impactLevel;
 
+  /// Optional display name of the person who filed the report.
+  /// Populated from the user's profile at submission time, if available.
+  final String? reporterName;
+
+  // ── Convenience helpers ──────────────────────────────────────────────────
+
+  /// Returns true if [userId] is the author of this report.
+  bool isAuthoredBy(String? userId) => userId != null && userId == authorId;
+
+  /// Returns true when this report is still awaiting action.
+  bool get isPending => status == 'Pending';
+
+  /// Returns true when this report has been resolved.
+  bool get isResolved => status == 'Resolved';
+
   /// Creates a [CommunityReport] from a Firestore document snapshot.
   factory CommunityReport.fromSnapshot(
       DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -65,6 +81,7 @@ class CommunityReport {
       impactLevel: impactLevelDescriptions.containsKey(data['impactLevel'])
           ? data['impactLevel'] as String
           : defaultImpactLevel,
+      reporterName: data['reporterName'] as String?,
     );
   }
 
@@ -82,6 +99,8 @@ class CommunityReport {
       'impactLevel': impactLevel,
       if (busNumber != null && busNumber!.isNotEmpty) 'busNumber': busNumber,
       'category': category,
+      if (reporterName != null && reporterName!.isNotEmpty)
+        'reporterName': reporterName,
       // createdAt is intentionally omitted — callers use FieldValue.serverTimestamp()
     };
   }
@@ -101,6 +120,7 @@ class CommunityReport {
     String? busNumber,
     String? category,
     String? impactLevel,
+    String? reporterName,
   }) {
     return CommunityReport(
       id: id ?? this.id,
@@ -114,6 +134,7 @@ class CommunityReport {
       busNumber: busNumber ?? this.busNumber,
       category: category ?? this.category,
       impactLevel: impactLevel ?? this.impactLevel,
+      reporterName: reporterName ?? this.reporterName,
     );
   }
 
