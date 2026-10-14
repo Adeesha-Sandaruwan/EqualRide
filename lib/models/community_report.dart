@@ -79,6 +79,7 @@ class CommunityReport {
       'authorId': authorId,
       'status': status,
       'upvoteCount': upvoteCount,
+      'impactLevel': impactLevel,
       if (busNumber != null && busNumber!.isNotEmpty) 'busNumber': busNumber,
       'category': category,
       // createdAt is intentionally omitted — callers use FieldValue.serverTimestamp()
@@ -99,6 +100,7 @@ class CommunityReport {
     int? upvoteCount,
     String? busNumber,
     String? category,
+    String? impactLevel,
   }) {
     return CommunityReport(
       id: id ?? this.id,
@@ -111,6 +113,7 @@ class CommunityReport {
       upvoteCount: upvoteCount ?? this.upvoteCount,
       busNumber: busNumber ?? this.busNumber,
       category: category ?? this.category,
+      impactLevel: impactLevel ?? this.impactLevel,
     );
   }
 
