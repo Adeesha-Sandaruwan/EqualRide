@@ -42,6 +42,7 @@ dependencies:
   flutter_map: ^8.3.2
   latlong2: ^0.10.1
   http: ^1.5.0
+  image_picker: ^1.2.4
   speech_to_text: ^7.5.0
   flutter_tts: ^4.2.5
   geolocator: ^14.1.1

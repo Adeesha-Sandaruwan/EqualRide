@@ -52,7 +52,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Critical'));
+    await tester.tap(find.text('Critical'));
 
     expect(selectedLevel, 'Critical');
   });

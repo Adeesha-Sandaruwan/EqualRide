@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../features/insights/widgets/insights_entry_card.dart';
 import '../localization/app_strings.dart';
 import '../models/accessibility_preferences.dart';
 import '../services/voice_assistant_service.dart';
@@ -472,6 +473,8 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
+              const SizedBox(height: 24),
+              InsightsEntryCard(language: widget.preferences.language),
               const SizedBox(height: 24),
               const _StatusCard(),
             ],

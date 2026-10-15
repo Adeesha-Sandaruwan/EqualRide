@@ -4,7 +4,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_theme.dart';
-import '../widgets/glass_panel.dart';
 
 String formatMapCoordinates(LatLng point) =>
     '${point.latitude.toStringAsFixed(6)}, ${point.longitude.toStringAsFixed(6)}';
@@ -152,7 +151,7 @@ class _AccessibilityMapLocationPickerPageState
             left: 16,
             right: 16,
             child: IgnorePointer(
-              child: GlassPanel(
+              child: _PickerCard(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 13,
@@ -183,7 +182,8 @@ class _AccessibilityMapLocationPickerPageState
                                 : 'Tap to place your pin',
                             style: const TextStyle(
                               color: AppTheme.textPrimary,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -191,9 +191,9 @@ class _AccessibilityMapLocationPickerPageState
                             hasSelectedPoint
                                 ? 'Tap another spot to adjust it.'
                                 : 'Zoom and move the map, then tap the exact spot.',
-                            style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 12,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.88),
+                              fontSize: 13,
                             ),
                           ),
                         ],
@@ -210,7 +210,7 @@ class _AccessibilityMapLocationPickerPageState
             bottom: 8,
             child: SafeArea(
               top: false,
-              child: GlassPanel(
+              child: _PickerCard(
                 padding: const EdgeInsets.all(18),
                 borderRadius: 24,
                 child: Column(
@@ -242,7 +242,8 @@ class _AccessibilityMapLocationPickerPageState
                                     : 'No location selected yet',
                                 style: const TextStyle(
                                   color: AppTheme.textPrimary,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -250,9 +251,9 @@ class _AccessibilityMapLocationPickerPageState
                                 hasSelectedPoint
                                     ? formatMapCoordinates(selectedPoint!)
                                     : 'Tap anywhere on the map to drop a pin.',
-                                style: const TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 12,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.88),
+                                  fontSize: 13,
                                 ),
                               ),
                             ],
@@ -271,8 +272,8 @@ class _AccessibilityMapLocationPickerPageState
                     const Text(
                       'You can edit the location description after returning to your report.',
                       style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 12,
+                        color: Color(0xE0FFFFFF),
+                        fontSize: 13,
                         height: 1.4,
                       ),
                     ),
@@ -288,6 +289,15 @@ class _AccessibilityMapLocationPickerPageState
                       onPressed: hasSelectedPoint
                           ? () => Navigator.of(context).pop(selectedPoint)
                           : null,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        disabledBackgroundColor: Colors.white.withValues(
+                          alpha: 0.16,
+                        ),
+                        disabledForegroundColor: Colors.white.withValues(
+                          alpha: 0.75,
+                        ),
+                      ),
                       icon: const Icon(Icons.check_rounded),
                       label: const Text('Use this location'),
                     ),
@@ -298,6 +308,39 @@ class _AccessibilityMapLocationPickerPageState
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Solid dark card so text stays readable over bright map tiles.
+class _PickerCard extends StatelessWidget {
+  const _PickerCard({
+    required this.child,
+    required this.padding,
+    required this.borderRadius,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: AppTheme.navy.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: AppTheme.teal.withValues(alpha: 0.45)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }

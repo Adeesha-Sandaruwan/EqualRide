@@ -24,6 +24,7 @@ class CommunityReport {
     this.category = 'bus',
     this.impactLevel = defaultImpactLevel,
     this.reporterName,
+    this.incidentPhotoBase64,
   });
 
   final String id;
@@ -61,6 +62,9 @@ class CommunityReport {
   /// Returns true when this report has been resolved.
   bool get isResolved => status == 'Resolved';
 
+  /// Optional incident photo, stored as plain base64 (JPEG).
+  final String? incidentPhotoBase64;
+
   /// Creates a [CommunityReport] from a Firestore document snapshot.
   factory CommunityReport.fromSnapshot(
       DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -82,8 +86,12 @@ class CommunityReport {
           ? data['impactLevel'] as String
           : defaultImpactLevel,
       reporterName: data['reporterName'] as String?,
+      incidentPhotoBase64: _nonEmpty(data['incidentPhotoBase64']),
     );
   }
+
+  static String? _nonEmpty(Object? value) =>
+      value is String && value.isNotEmpty ? value : null;
 
   // ── Firestore serialization ──────────────────────────────────────────────
 
@@ -101,6 +109,8 @@ class CommunityReport {
       'category': category,
       if (reporterName != null && reporterName!.isNotEmpty)
         'reporterName': reporterName,
+      if (incidentPhotoBase64 != null && incidentPhotoBase64!.isNotEmpty)
+        'incidentPhotoBase64': incidentPhotoBase64,
       // createdAt is intentionally omitted — callers use FieldValue.serverTimestamp()
     };
   }
@@ -121,6 +131,7 @@ class CommunityReport {
     String? category,
     String? impactLevel,
     String? reporterName,
+    String? incidentPhotoBase64,
   }) {
     return CommunityReport(
       id: id ?? this.id,
@@ -135,6 +146,7 @@ class CommunityReport {
       category: category ?? this.category,
       impactLevel: impactLevel ?? this.impactLevel,
       reporterName: reporterName ?? this.reporterName,
+      incidentPhotoBase64: incidentPhotoBase64 ?? this.incidentPhotoBase64,
     );
   }
 
