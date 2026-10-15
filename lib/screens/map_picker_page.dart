@@ -1,3 +1,4 @@
+// Lets the user choose a map point and confirm its address.
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -20,6 +21,7 @@ Future<PickedMapLocation?> pickLocationOnMap(
   );
 }
 
+// Displays the map selection screen.
 class MapPickerPage extends StatefulWidget {
   const MapPickerPage({
     super.key,
@@ -40,6 +42,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
   var _isLookingUp = false;
   var _lookupId = 0;
 
+  // Looks up the address for the point tapped on the map.
   Future<void> _selectPoint(LatLng point) async {
     final lookupId = ++_lookupId;
 
@@ -62,6 +65,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
     });
   }
 
+  // Returns the selected point to the page that opened the map.
   void _confirm() {
     final selected = _selected;
     if (selected == null || _isLookingUp || _address.isEmpty) return;

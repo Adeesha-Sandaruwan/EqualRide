@@ -1,8 +1,11 @@
+// Looks up the text shown in English or Sinhala.
 import '../models/accessibility_preferences.dart';
 
+// Returns the requested label in the selected language.
 class AppStrings {
   const AppStrings._();
 
+  // Returns a translation, or falls back to English if needed.
   static String text(AppLanguage language, String key) {
     final values = language == AppLanguage.sinhala ? _sinhala : _english;
     return values[key] ?? _english[key] ?? key;

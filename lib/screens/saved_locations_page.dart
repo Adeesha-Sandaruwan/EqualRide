@@ -1,3 +1,4 @@
+// Lets the user view and manage saved places.
 import 'package:flutter/material.dart';
 
 import '../models/saved_location.dart';
@@ -8,6 +9,7 @@ import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
 import 'map_picker_page.dart';
 
+// Shows the user?s saved places and available actions.
 class SavedLocationsPage extends StatefulWidget {
   const SavedLocationsPage({
     super.key,

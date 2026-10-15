@@ -1,5 +1,7 @@
+// Supplies sample routes for search and recommendations.
 import '../models/transport_route.dart';
 
+// Provides example routes while live route data is unavailable.
 class DemoRoutes {
   static final List<TransportRoute> routes = List.unmodifiable([
     const TransportRoute(

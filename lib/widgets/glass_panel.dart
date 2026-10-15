@@ -1,7 +1,9 @@
+// Provides a reusable translucent panel for page content.
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+// Wraps content in the shared translucent panel style.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,

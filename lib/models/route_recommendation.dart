@@ -1,5 +1,7 @@
+// Pairs a route with its score and matching reasons.
 import 'transport_route.dart';
 
+// Stores a route, its match score, and explanation.
 class RouteRecommendation {
   const RouteRecommendation({
     required this.route,

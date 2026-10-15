@@ -1,3 +1,5 @@
+// Holds transport and accessibility details for one route.
+// Represents one bus, train, or other transport option.
 class TransportRoute {
   const TransportRoute({
     required this.id,

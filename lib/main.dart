@@ -1,3 +1,4 @@
+// Starts Firebase and opens the app with saved display settings.
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ import 'services/voice_assistant_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/voice_assistant_floating_button.dart';
 
+// Initializes Firebase before starting the app.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -24,6 +26,7 @@ Future<void> main() async {
   runApp(const EqualRideApp());
 }
 
+// Builds the top level app and applies display settings.
 class EqualRideApp extends StatefulWidget {
   const EqualRideApp({super.key});
 
@@ -126,6 +129,7 @@ class _EqualRideAppState extends State<EqualRideApp> {
   }
 }
 
+// Chooses the page based on sign-in status.
 class AppRouter extends StatefulWidget {
   const AppRouter({
     super.key,
@@ -165,6 +169,7 @@ class _AppRouterState extends State<AppRouter> {
   }
 }
 
+// Loads profile preferences before showing the home page.
 class UserSetupRouter extends StatefulWidget {
   const UserSetupRouter({
     super.key,
@@ -213,6 +218,7 @@ class _UserSetupRouterState extends State<UserSetupRouter> {
     });
   }
 
+  // Stores the preferences and applies them to the display.
   Future<void> savePreferences(
     AccessibilityPreferences preferences,
   ) async {
@@ -281,6 +287,7 @@ class _UserSetupRouterState extends State<UserSetupRouter> {
   }
 }
 
+// Shows a simple loading screen while profile data loads.
 class LoadingPage extends StatelessWidget {
   const LoadingPage({super.key});
 

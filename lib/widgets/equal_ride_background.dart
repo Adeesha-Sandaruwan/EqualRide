@@ -1,5 +1,7 @@
+// Draws the shared EqualRide background behind a page.
 import 'package:flutter/material.dart';
 
+// Wraps a page with the app?s decorative background.
 class EqualRideBackground extends StatelessWidget {
   const EqualRideBackground({
     super.key,

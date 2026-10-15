@@ -1,5 +1,7 @@
+// Defines shared colours and styles for the app.
 import 'package:flutter/material.dart';
 
+// Holds the colours and theme used throughout the app.
 class AppTheme {
   static const navy = Color(0xFF071D36);
   static const navyLight = Color(0xFF10365E);

@@ -1,7 +1,9 @@
+// Adds, watches, updates, and removes a user?s saved places.
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/saved_location.dart';
 
+// Connects saved places to the user?s Firestore collection.
 class SavedLocationService {
   SavedLocationService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -31,6 +33,7 @@ class SavedLocationService {
         );
   }
 
+  // Adds a new saved place.
   Future<void> addLocation({
     required String userId,
     required String name,
@@ -44,6 +47,7 @@ class SavedLocationService {
     });
   }
 
+  // Changes the saved place name or address.
   Future<void> updateLocation({
     required String userId,
     required SavedLocation location,
@@ -57,6 +61,7 @@ class SavedLocationService {
     });
   }
 
+  // Deletes a saved place.
   Future<void> deleteLocation({
     required String userId,
     required String locationId,

@@ -1,3 +1,4 @@
+// Provides journey search and shortcuts to app features.
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,7 @@ import 'map_picker_page.dart';
 import 'route_results_page.dart';
 import 'saved_locations_page.dart';
 
+// Contains the main journey search and feature links.
 class HomePage extends StatefulWidget {
   const HomePage({
     super.key,
@@ -202,6 +204,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  // Checks the journey details and opens matching routes.
   void findRoute() {
     final from = fromController.text.trim();
     final destination = destinationController.text.trim();
@@ -242,6 +245,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Opens the list of saved places.
   Future<void> _openSavedLocations() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
