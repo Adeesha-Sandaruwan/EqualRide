@@ -1,13 +1,16 @@
+// Turns map coordinates into a readable address.
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+// Requests place names for latitude and longitude values.
 class ReverseGeocodingService {
   ReverseGeocodingService({http.Client? client})
       : _client = client ?? http.Client();
 
   final http.Client _client;
 
+  // Looks up a place name and uses coordinates as a fallback.
   Future<String> addressFor({
     required double latitude,
     required double longitude,
@@ -44,10 +47,12 @@ class ReverseGeocodingService {
   }
 }
 
+// Displays coordinates with five decimal places.
 String formatCoordinates(double latitude, double longitude) {
   return '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}';
 }
 
+// Combines available place names and skips duplicates.
 String? formatPlaceAddress(Map<String, dynamic> data) {
   final parts = <String>[];
 

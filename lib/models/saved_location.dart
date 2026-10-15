@@ -1,3 +1,5 @@
+// Holds a saved place and converts its Firestore data.
+// Represents a named place saved by the user.
 class SavedLocation {
   const SavedLocation({
     required this.id,
@@ -9,6 +11,7 @@ class SavedLocation {
   final String name;
   final String address;
 
+  // Converts the place into fields that can be saved.
   Map<String, dynamic> toMap() {
     return {
       'name': name,

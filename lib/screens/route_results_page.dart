@@ -1,3 +1,4 @@
+// Displays and filters routes found for a journey.
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -17,6 +18,7 @@ import '../widgets/glass_panel.dart';
 import '../widgets/route_recommendation_card.dart';
 import 'route_details_page.dart';
 
+// Shows the available journey options.
 class RouteResultsPage extends StatefulWidget {
   const RouteResultsPage({
     super.key,

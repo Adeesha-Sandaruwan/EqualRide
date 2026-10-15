@@ -1,8 +1,10 @@
+// Shows a recommended route and why it was selected.
 import 'package:flutter/material.dart';
 
 import '../models/route_recommendation.dart';
 import '../theme/app_theme.dart';
 
+// Presents route details and recommendation reasons.
 class RouteRecommendationCard extends StatelessWidget {
   const RouteRecommendationCard({
     super.key,

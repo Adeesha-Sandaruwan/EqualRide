@@ -1,3 +1,5 @@
+// Holds the coordinates and address picked on the map.
+// Carries a chosen point and its readable address.
 class PickedMapLocation {
   const PickedMapLocation({
     required this.latitude,

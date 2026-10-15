@@ -1,3 +1,4 @@
+// Provides the sign-in and account creation form.
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -6,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
 
+// Contains the sign-in and account creation form.
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
 
@@ -30,6 +32,7 @@ class _AuthPageState extends State<AuthPage> {
     super.dispose();
   }
 
+  // Validates the form and sends the sign-in or sign-up request.
   Future<void> submit() async {
     if (!formKey.currentState!.validate()) return;
 
@@ -55,6 +58,7 @@ class _AuthPageState extends State<AuthPage> {
     }
   }
 
+  // Turns a Firebase error code into a readable message.
   String authErrorMessage(String code) {
     switch (code) {
       case 'email-already-in-use':

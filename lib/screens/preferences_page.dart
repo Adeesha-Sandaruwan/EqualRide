@@ -1,3 +1,4 @@
+// Lets the user change and save accessibility and display settings.
 import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
@@ -7,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../widgets/equal_ride_background.dart';
 import '../widgets/glass_panel.dart';
 
+// Shows controls for accessibility and display choices.
 class PreferencesPage extends StatefulWidget {
   const PreferencesPage({
     super.key,
@@ -67,6 +69,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
 
   String t(String key) => AppStrings.text(language, key);
 
+  // Saves the selected preferences for the signed-in user.
   Future<void> save() async {
     setState(() => isSaving = true);
 

@@ -1,5 +1,7 @@
+// Stores accessibility, display, language, and voice choices.
 enum AppLanguage { english, sinhala }
 
+// Holds settings that guide how the app looks and recommends travel.
 class AccessibilityPreferences {
   final bool stepFreeRoutes;
   final bool lowCrowding;
@@ -25,6 +27,7 @@ class AccessibilityPreferences {
     this.voiceSlowSpeech = false,
   });
 
+  // Converts the settings into fields that can be saved.
   Map<String, dynamic> toMap() => {
         'stepFreeRoutes': stepFreeRoutes,
         'lowCrowding': lowCrowding,

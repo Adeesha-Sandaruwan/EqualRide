@@ -1,7 +1,9 @@
+// Scores routes against the traveller?s saved preferences.
 import '../models/accessibility_preferences.dart';
 import '../models/route_recommendation.dart';
 import '../models/transport_route.dart';
 
+// Applies preference rules and orders the matching routes.
 class RouteRecommendationService {
   List<RouteRecommendation> rankRoutes({
     required List<TransportRoute> routes,
